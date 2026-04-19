@@ -34,11 +34,13 @@ First-run checklist:
 
 ```bash
 mise install              # pin bun + node
-mise run setup            # bun install in root + web/, seed .dev.vars
-bunx wrangler login       # one-time CF auth
-mise run d1:create        # create the remote D1; paste the id into wrangler.jsonc
-mise run migrate:local
-mise run dev              # http://localhost:8787
+bunx wrangler login       # one-time CF auth (skip if you're going headless)
+mise init                 # installs deps, seeds .dev.vars, applies local migrations,
+                          # and — if wrangler is authenticated — provisions the remote
+                          # D1 (patching wrangler.jsonc), BETTER_AUTH_SECRET, and remote
+                          # migrations
+mise dev                  # http://localhost:8787
+mise deploy               # ship to *.workers.dev
 ```
 
 Common loops:
@@ -66,10 +68,10 @@ mise run migrate:remote   # wrangler d1 migrations apply --remote
 ## Deploy
 
 ```bash
-mise run migrate:remote
-mise run secret:put       # generates + uploads BETTER_AUTH_SECRET
-mise run deploy
+mise deploy
 ```
+
+`mise init` already uploaded `BETTER_AUTH_SECRET` and applied remote migrations. `mise run secret:put` (idempotent) rotates the secret, and `mise run migrate:remote` applies new migrations after `mise run db:generate`.
 
 After the first deploy, update `vars.BETTER_AUTH_URL` in `wrangler.jsonc` to the `*.workers.dev` URL (or custom domain) and `mise run deploy` again — better-auth uses it to issue redirects and cookies.
 

@@ -6,23 +6,28 @@ node = "22"
 #
 # First-time setup for a new checkout:
 #   mise install              # pin bun + node per [tools]
-#   mise run setup            # bun install in root + web/, seed .dev.vars
-#   mise run d1:create        # create the remote D1; paste id into wrangler.jsonc
-#   mise run migrate:local    # seed local D1 with the initial migration
-#   mise run dev              # http://localhost:8787
+#   bunx wrangler login       # one-time CF auth (skip if you're going headless)
+#   mise init                 # installs deps, seeds .dev.vars, applies local D1
+#                             # migrations, provisions remote D1 + BETTER_AUTH_SECRET,
+#                             # applies remote migrations
+#   mise dev                  # http://localhost:8787
+#   mise deploy               # ship to *.workers.dev
 #
 # On a headless box (no browser for `wrangler login`), export
-# CLOUDFLARE_API_TOKEN in your shell and add --headless to setup:
-#   mise run setup --headless
-# Every subsequent CF-touching task (d1:create, migrate:remote, deploy,
-# teardown) also reads CLOUDFLARE_API_TOKEN from the environment, so just
-# keep it exported.
+# CLOUDFLARE_API_TOKEN in your shell and add --headless to init:
+#   mise init --headless
+# Every subsequent CF-touching task (d1:create, secret:put, migrate:remote,
+# deploy, teardown) also reads CLOUDFLARE_API_TOKEN from the environment, so
+# just keep it exported.
 #
 # To also create a private GitHub repo in the same step, pass --github:
-#   mise run setup --github          # or combine: --headless --github
+#   mise init --github               # or combine: --headless --github
+# init calls d1:create + secret:put + migrate:remote automatically whenever
+# wrangler is authenticated, so the patched wrangler.jsonc is part of the
+# initial commit pushed to GitHub.
 
-[tasks.setup]
-description = "Install deps, seed .dev.vars, and optionally create a private GitHub repo"
+[tasks.init]
+description = "Install deps, seed .dev.vars, apply local migrations, provision remote D1 + BETTER_AUTH_SECRET + remote migrations (when authenticated), optionally create a private GitHub repo"
 usage = '''
 flag "--headless" help="verify CLOUDFLARE_API_TOKEN via wrangler whoami before installing"
 flag "--github"   help="git-init (if needed), commit, and create a private GitHub repo named {{ project_slug }} with upstream set"
@@ -37,7 +42,7 @@ if [ "${usage_headless:-false}" = "true" ]; then
     echo "    CLOUDFLARE_API_TOKEN           (scoped token, preferred)" >&2
     echo "    CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL  (global key fallback)" >&2
     echo "  Export them, or run under a secret manager, e.g." >&2
-    echo "    fnox exec -- mise run setup --headless" >&2
+    echo "    fnox exec -- mise run init --headless" >&2
     exit 1
   fi
   bunx wrangler whoami >/dev/null 2>&1 || {
@@ -54,11 +59,6 @@ if [ "${usage_github:-false}" = "true" ]; then
     git init -b main >/dev/null
     echo "✓ git initialized"
   fi
-  if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
-    git add -A
-    git commit -q -m "initial commit from cloudflare-better-auth-d1 template"
-    echo "✓ initial commit"
-  fi
 fi
 
 bun install
@@ -74,7 +74,27 @@ else
   echo "✓ created .dev.vars"
 fi
 
+# Apply migrations to the local D1 so `mise dev` works out of the box (no auth required).
+mise run migrate:local
+
+# Remote bootstrap — only if wrangler is already authenticated (always true under
+# --headless, and true in interactive mode once the user has run `bunx wrangler login`).
+# Provisions D1, uploads BETTER_AUTH_SECRET, and applies the initial migration to the
+# remote D1 so `mise deploy` immediately after init yields a working auth endpoint.
+if bunx wrangler whoami >/dev/null 2>&1; then
+  mise run d1:create
+  mise run secret:put
+  mise run migrate:remote
+else
+  echo "ℹ Skipping remote bootstrap — run \`bunx wrangler login\` (or re-run init with --headless), then \`mise run d1:create && mise run secret:put && mise run migrate:remote\`"
+fi
+
 if [ "${usage_github:-false}" = "true" ]; then
+  if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
+    git add -A
+    git commit -q -m "initial commit from cloudflare-better-auth-d1 template"
+    echo "✓ initial commit"
+  fi
   if git remote get-url origin >/dev/null 2>&1; then
     echo "• origin already set — skipping gh repo create"
   else
@@ -112,8 +132,44 @@ description = "Generate drizzle migration from the updated schema"
 run = "bunx drizzle-kit generate"
 
 [tasks."d1:create"]
-description = "Create the remote D1 (paste the returned id into wrangler.jsonc)"
-run = "bunx wrangler d1 create {{ d1_database_name }}"
+description = "Create the remote D1 and patch database_id into wrangler.jsonc (idempotent)"
+run = '''
+placeholder="REPLACE_WITH_ID_FROM_wrangler_d1_create"
+
+if ! grep -q "$placeholder" wrangler.jsonc; then
+  echo "✓ wrangler.jsonc already has a database_id — skipping"
+  exit 0
+fi
+
+command -v jq >/dev/null 2>&1 || { echo "✗ d1:create requires jq (https://jqlang.org)" >&2; exit 1; }
+
+id=""
+if list_json=$(bunx wrangler d1 list --json 2>/dev/null); then
+  id=$(printf '%s' "$list_json" | jq -r --arg name "{{ d1_database_name }}" '.[] | select(.name == $name) | .uuid' | head -1)
+fi
+
+if [ -n "$id" ]; then
+  echo "• remote D1 '{{ d1_database_name }}' already exists — reusing $id"
+else
+  # Answer wrangler's interactive "add binding for me?" prompt with "n" so it does not
+  # append a second d1_databases entry — we patch the existing DB binding ourselves.
+  create_out=$(printf 'n\n' | bunx wrangler d1 create "{{ d1_database_name }}" 2>&1) || {
+    printf '%s\n' "$create_out" >&2
+    exit 1
+  }
+  printf '%s\n' "$create_out"
+  id=$(printf '%s' "$create_out" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+fi
+
+if [ -z "$id" ]; then
+  echo "✗ could not determine D1 database_id from wrangler output" >&2
+  exit 1
+fi
+
+tmp=$(mktemp)
+sed "s|$placeholder|$id|" wrangler.jsonc > "$tmp" && mv "$tmp" wrangler.jsonc
+echo "✓ wrangler.jsonc patched with database_id $id"
+'''
 
 [tasks."migrate:local"]
 description = "Apply migrations to the local D1"
@@ -124,13 +180,30 @@ description = "Apply migrations to the remote D1"
 run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --remote"
 
 [tasks."secret:put"]
-description = "Generate + upload a fresh BETTER_AUTH_SECRET to the remote Worker"
-run = "openssl rand -base64 32 | bunx wrangler secret put BETTER_AUTH_SECRET"
+description = "Ensure BETTER_AUTH_SECRET is set on the remote Worker (idempotent — skips if already present)"
+run = '''
+command -v jq >/dev/null 2>&1 || { echo "✗ secret:put requires jq (https://jqlang.org)" >&2; exit 1; }
+
+if out=$(bunx wrangler secret list 2>/dev/null) && printf '%s' "$out" | jq -e 'any(.name == "BETTER_AUTH_SECRET")' >/dev/null 2>&1; then
+  echo "✓ BETTER_AUTH_SECRET already set on {{ worker_name }} — skipping"
+  exit 0
+fi
+
+# wrangler secret put auto-creates an empty Worker stub if {{ worker_name }} does not exist yet,
+# so this works both pre- and post-first-deploy.
+openssl rand -base64 32 | bunx wrangler secret put BETTER_AUTH_SECRET
+'''
 
 [tasks.deploy]
 description = "Build the SPA and deploy the Worker"
 depends = ["web:build"]
-run = "bunx wrangler deploy"
+run = '''
+if grep -q REPLACE_WITH_ID_FROM_wrangler_d1_create wrangler.jsonc; then
+  echo "✗ wrangler.jsonc still has the D1 id placeholder — run: mise run d1:create" >&2
+  exit 1
+fi
+bunx wrangler deploy
+'''
 
 [tasks.teardown]
 description = "Delete the remote Worker and D1 database (irreversible)"

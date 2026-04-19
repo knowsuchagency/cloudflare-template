@@ -5,6 +5,9 @@
 /smoke-*/
 /tmp-generated/
 
+# wrangler cache from dev commands run at repo root
+/.wrangler/
+
 # editor / tooling
 .DS_Store
 

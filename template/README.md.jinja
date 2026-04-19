@@ -12,28 +12,31 @@ All project commands are defined as [mise](https://mise.jdx.dev/) tasks. If you 
 
 ```bash
 mise install                  # pin bun + node per mise.toml
-mise run setup                # bun install in root + web/, seed .dev.vars with a fresh secret
 bunx wrangler login           # one-time CF auth (interactive — see below for headless)
-mise run d1:create            # create the remote D1, paste the id into wrangler.jsonc
-mise run migrate:local        # seed local D1 with the initial migration
-mise run dev                  # http://localhost:8787
+mise init                     # installs deps, seeds .dev.vars, applies local
+                              # migrations, provisions remote D1 + BETTER_AUTH_SECRET,
+                              # applies remote migrations
+mise dev                      # http://localhost:8787
+mise deploy                   # ship to *.workers.dev
 ```
+
+`init` only provisions remote resources when wrangler is already authenticated. If you skipped `wrangler login`, it prints a hint and moves on — run `mise run d1:create && mise run secret:put && mise run migrate:remote` yourself once you've logged in. `d1:create` and `secret:put` require `jq`.
 
 ### Headless auth (no browser)
 
-`bunx wrangler login` fails on a headless box with `Missing file or directory: xdg-open`. Instead, export credentials as env vars (either a scoped `CLOUDFLARE_API_TOKEN` — preferred, create at <https://dash.cloudflare.com/profile/api-tokens> with Workers Scripts:Edit + D1:Edit — or the `CLOUDFLARE_API_KEY` + `CLOUDFLARE_EMAIL` global-key pair) and pass `--headless` to `setup`:
+`bunx wrangler login` fails on a headless box with `Missing file or directory: xdg-open`. Instead, export credentials as env vars (either a scoped `CLOUDFLARE_API_TOKEN` — preferred, create at <https://dash.cloudflare.com/profile/api-tokens> with Workers Scripts:Edit + D1:Edit + Secrets:Edit — or the `CLOUDFLARE_API_KEY` + `CLOUDFLARE_EMAIL` global-key pair) and pass `--headless` to `init`:
 
 ```bash
 export CLOUDFLARE_API_TOKEN=...
-mise run setup --headless     # validates via `wrangler whoami` before installing
-mise run d1:create             # every subsequent CF task reads the same env vars
+mise init --headless          # validates via `wrangler whoami`, then provisions D1,
+                              # uploads the auth secret, and applies remote migrations
 ```
 
-With a secret manager like [fnox](https://github.com/jdx/fnox): `fnox exec -- mise run setup --headless`.
+With a secret manager like [fnox](https://github.com/jdx/fnox): `fnox exec -- mise init --headless`.
 
 ### Push to a new private GitHub repo
 
-Pass `--github` to `setup` to `git init` (if needed), stage + commit the template content, create a private GitHub repo named `{{ project_slug }}`, and push `main` with upstream set. Requires the [gh CLI](https://cli.github.com) authenticated (`gh auth login`). Combine with `--headless` if you want both in one shot: `mise run setup --headless --github`.
+Pass `--github` to `init` to `git init` (if needed), stage + commit the template content, create a private GitHub repo named `{{ project_slug }}`, and push `main` with upstream set. Requires the [gh CLI](https://cli.github.com) authenticated (`gh auth login`). Combine with `--headless` if you want both in one shot: `mise init --headless --github`.
 
 ## Tasks
 
@@ -47,17 +50,17 @@ Run `mise tasks` for the full list. Highlights:
 | `mise run auth:generate` | Regenerate `src/db/schema.ts` from `better-auth.config.ts` |
 | `mise run db:generate` | `drizzle-kit generate` (emit SQL from the new schema) |
 | `mise run migrate:local` / `migrate:remote` | Apply D1 migrations |
-| `mise run secret:put` | Generate + upload a fresh `BETTER_AUTH_SECRET` to the remote Worker |
+| `mise run secret:put` | Ensure `BETTER_AUTH_SECRET` is set on the remote Worker (idempotent) |
 | `mise run deploy` | Build the SPA and `wrangler deploy` |
 | `mise run teardown` | Delete the remote Worker and D1 database (irreversible) |
 
 ## Deploy
 
 ```bash
-mise run migrate:remote
-mise run secret:put           # generates + uploads BETTER_AUTH_SECRET
-mise run deploy
-# After first deploy: update vars.BETTER_AUTH_URL in wrangler.jsonc to the *.workers.dev URL, then `mise run deploy` again.
+mise deploy
+# After first deploy: update vars.BETTER_AUTH_URL in wrangler.jsonc to the *.workers.dev URL, then `mise deploy` again.
 ```
+
+`mise init` already uploaded `BETTER_AUTH_SECRET` and applied remote migrations. Use `mise run secret:put` to rotate the secret (skips when already set — delete it in the dashboard first to force a new one) and `mise run migrate:remote` after adding new migrations.
 
 See `CLAUDE.md` for the full architecture, schema-generation flow, and auth-specific gotchas.
