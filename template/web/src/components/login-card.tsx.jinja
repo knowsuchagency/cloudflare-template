@@ -25,10 +25,8 @@ export function LoginCard({ onAuthed }: { onAuthed: () => void }) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">Better Auth on D1</CardTitle>
-        <CardDescription>
-          Hono worker, Drizzle adapter, Cloudflare D1.
-        </CardDescription>
+        <CardTitle className="text-xl">{{ app_title }}</CardTitle>
+        <CardDescription>{{ app_tagline }}</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="sign-in">

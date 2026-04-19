@@ -1,5 +1,5 @@
 {
-  "name": "cloudflare-better-auth-experiment-lw48",
+  "name": "{{ project_slug }}",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -10,8 +10,8 @@
     "cf-typegen": "wrangler types",
     "auth:generate": "better-auth generate --config ./better-auth.config.ts --output ./src/db/schema.ts -y",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply better-auth-experiment --local",
-    "db:migrate:remote": "wrangler d1 migrations apply better-auth-experiment --remote"
+    "db:migrate:local": "wrangler d1 migrations apply {{ d1_database_name }} --local",
+    "db:migrate:remote": "wrangler d1 migrations apply {{ d1_database_name }} --remote"
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",

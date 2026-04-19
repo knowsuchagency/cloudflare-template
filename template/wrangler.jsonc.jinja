@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "cloudflare-better-auth-experiment",
+  "name": "{{ worker_name }}",
   "main": "src/index.ts",
   "compatibility_date": "2026-04-01",
   "compatibility_flags": ["nodejs_compat"],
@@ -8,8 +8,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "better-auth-experiment",
-      "database_id": "35430b39-bb8b-4ba7-95bc-f927a23131fb",
+      "database_name": "{{ d1_database_name }}",
+      "database_id": "REPLACE_WITH_ID_FROM_wrangler_d1_create",
       "migrations_dir": "./drizzle"
     }
   ],
@@ -20,6 +20,6 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    "BETTER_AUTH_URL": "https://cloudflare-better-auth-experiment.knowsuchagency.workers.dev"
+    "BETTER_AUTH_URL": "http://localhost:8787"
   }
 }

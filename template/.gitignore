@@ -1,0 +1,27 @@
+node_modules/
+dist/
+out/
+.DS_Store
+
+# cloudflare workers
+.wrangler/
+worker-configuration.d.ts
+
+# env + secrets
+.dev.vars
+.env
+.env.local
+.cf-env.sh
+
+# web/
+web/node_modules/
+web/dist/
+web/.vite/
+
+# copier metadata (keep .copier-answers.yml committed so users can `copier update`)
+# .copier-answers.yml   <- do NOT ignore; it records the template version/inputs
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo

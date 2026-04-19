@@ -1,40 +1,19 @@
-# dependencies (bun install)
-node_modules
-
-# output
-out
-dist
-*.tgz
-
-# code coverage
-coverage
-*.lcov
-
-# logs
-logs
-_.log
-report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
-
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
-
-# caches
-.eslintcache
-.cache
-*.tsbuildinfo
-
-# IntelliJ based IDEs
-.idea
-
-# Finder (MacOS) folder config
-.DS_Store
 .cf-env.sh
-web/node_modules/
-web/dist/
-web/.vite/
-screenshots/
-.tail.log
+.dev.vars
+
+# ephemeral smoke-test outputs
+/smoke-*/
+/tmp-generated/
+
+# editor / tooling
+.DS_Store
+
+# If you develop the template by running its own wrangler/bun toolchain
+# from within template/, those artifacts land here:
+template/node_modules/
+template/web/node_modules/
+template/web/dist/
+template/.wrangler/
+template/.dev.vars
+template/.copier-answers.yml
+template/worker-configuration.d.ts

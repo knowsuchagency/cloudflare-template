@@ -1,0 +1,68 @@
+_min_copier_version: "9.0"
+_subdirectory: template
+_templates_suffix: .jinja
+_answers_file: .copier-answers.yml
+
+_exclude:
+  - "copier.yml"
+  - "README.md"
+  - ".git"
+  - ".jj"
+  - ".copier-answers.yml"
+  - "node_modules"
+  - "**/node_modules"
+  - ".wrangler"
+  - "**/.wrangler"
+  - "web/dist"
+  - "worker-configuration.d.ts"
+  - ".dev.vars"
+  - ".cf-env.sh"
+
+_tasks:
+  - "bun install"
+  - ["bash", "-c", "cd web && bun install && bun run build"]
+  - "bunx wrangler types"
+
+_message_after_copy: |
+  Project generated.
+
+  Next steps:
+    1. Authenticate wrangler (one-time): bunx wrangler login
+    2. Create the D1 database:            bunx wrangler d1 create {{ d1_database_name }}
+    3. Paste the returned database_id into wrangler.jsonc
+    4. Create .dev.vars with:
+         BETTER_AUTH_URL=http://localhost:8787
+         BETTER_AUTH_SECRET=$(openssl rand -base64 32)
+    5. Apply migrations locally:          bun run db:migrate:local
+    6. Start dev server:                  bun run dev
+
+  See CLAUDE.md for the full deployment flow.
+
+project_slug:
+  type: str
+  help: "Project slug (kebab-case). Used for Cloudflare Worker name and package.json name."
+  placeholder: "my-auth-app"
+  validator: >-
+    {% if not (project_slug | regex_search('^[a-z][a-z0-9-]*$')) -%}
+    Must be lowercase letters, digits, and hyphens, starting with a letter.
+    {%- endif %}
+
+app_title:
+  type: str
+  help: "Human-readable app name shown in the page title and login card."
+  default: "{{ project_slug | replace('-', ' ') | title }}"
+
+app_tagline:
+  type: str
+  help: "One-line description shown under the app title in the login card."
+  default: "Hono worker, Drizzle adapter, Cloudflare D1."
+
+worker_name:
+  type: str
+  help: "Cloudflare Worker name (appears in *.workers.dev subdomain)."
+  default: "{{ project_slug }}"
+
+d1_database_name:
+  type: str
+  help: "Cloudflare D1 database name."
+  default: "{{ project_slug }}-db"
