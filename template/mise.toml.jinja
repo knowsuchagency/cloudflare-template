@@ -1,0 +1,82 @@
+[tools]
+bun = "1.3.3"
+node = "22"
+
+# Tasks — run `mise tasks` to list them.
+#
+# First-time setup for a new checkout:
+#   mise install              # pin bun + node per [tools]
+#   mise run install          # bun install in root and web/
+#   mise run init             # create .dev.vars with a fresh BETTER_AUTH_SECRET
+#   mise run d1:create        # create the remote D1; paste id into wrangler.jsonc
+#   mise run migrate:local    # seed local D1 with the initial migration
+#   mise run dev              # http://localhost:8787
+
+[tasks.install]
+description = "bun install in Worker + web"
+run = [
+  "bun install",
+  "bun install --cwd web",
+]
+
+[tasks.init]
+description = "Create .dev.vars with a fresh BETTER_AUTH_SECRET"
+run = '''
+if [ -f .dev.vars ]; then
+  echo "• .dev.vars already exists — leaving it alone"
+else
+  {
+    echo "BETTER_AUTH_URL=http://localhost:8787"
+    printf 'BETTER_AUTH_SECRET=%s\n' "$(openssl rand -base64 32)"
+  } > .dev.vars
+  echo "✓ created .dev.vars"
+fi
+'''
+
+[tasks."web:build"]
+description = "Build the Vite SPA into web/dist"
+dir = "web"
+run = "bun run build"
+sources = ["src/**/*", "index.html", "vite.config.ts", "package.json", "tsconfig.json", "tsconfig.app.json"]
+outputs = ["dist/**/*"]
+
+[tasks.dev]
+description = "Run the Worker locally (builds SPA first)"
+depends = ["web:build"]
+run = "bunx wrangler dev"
+
+[tasks.typecheck]
+description = "Typecheck Worker + web"
+run = [
+  "bunx tsc --noEmit",
+  "cd web && bunx tsc --noEmit",
+]
+
+[tasks."auth:generate"]
+description = "Regenerate src/db/schema.ts from better-auth config"
+run = "bunx better-auth generate --config ./better-auth.config.ts --output ./src/db/schema.ts -y"
+
+[tasks."db:generate"]
+description = "Generate drizzle migration from the updated schema"
+run = "bunx drizzle-kit generate"
+
+[tasks."d1:create"]
+description = "Create the remote D1 (paste the returned id into wrangler.jsonc)"
+run = "bunx wrangler d1 create {{ d1_database_name }}"
+
+[tasks."migrate:local"]
+description = "Apply migrations to the local D1"
+run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --local"
+
+[tasks."migrate:remote"]
+description = "Apply migrations to the remote D1"
+run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --remote"
+
+[tasks."secret:put"]
+description = "Generate + upload a fresh BETTER_AUTH_SECRET to the remote Worker"
+run = "openssl rand -base64 32 | bunx wrangler secret put BETTER_AUTH_SECRET"
+
+[tasks.deploy]
+description = "Build the SPA and deploy the Worker"
+depends = ["web:build"]
+run = "bunx wrangler deploy"

@@ -26,24 +26,40 @@ web/               # Vite React SPA (shadcn preset buFznsW, radix-lyra, phosphor
 
 Worker serves the SPA through the `assets` binding with `not_found_handling: single-page-application`. `run_worker_first: ["/api/*"]` gates the Worker in front of the assets handler for API routes.
 
-## First-run checklist
+## Commands (mise tasks)
 
-1. `bun install` at root and in `web/`
-2. `cd web && bun run build` — the Worker serves `web/dist`, so this must run before `wrangler dev`
-3. `wrangler d1 create {{ d1_database_name }}` — paste the returned `database_id` into `wrangler.jsonc`
-4. `bun run db:migrate:local` to seed the local D1 with the generated migration
-5. Create `.dev.vars` with `BETTER_AUTH_SECRET=$(openssl rand -base64 32)` and `BETTER_AUTH_URL=http://localhost:8787`
-6. `bun run dev` → `http://localhost:8787`
+All project commands run through mise — see `mise.toml` for the full list, or `mise tasks`.
+
+First-run checklist:
+
+```bash
+mise install              # pin bun + node
+mise run install          # bun install in root + web/
+mise run init             # write .dev.vars with a fresh BETTER_AUTH_SECRET
+bunx wrangler login       # one-time CF auth
+mise run d1:create        # create the remote D1; paste the id into wrangler.jsonc
+mise run migrate:local
+mise run dev              # http://localhost:8787
+```
+
+Common loops:
+
+```bash
+mise run dev              # builds SPA (source-tracked) then wrangler dev
+mise run typecheck        # Worker + web together
+mise run web:build        # SPA only; mise caches based on sources
+mise run deploy           # web:build -> wrangler deploy
+```
 
 ## Schema & migration flow
 
 The schema is **generated, not hand-written**. When adding a better-auth plugin or changing `src/lib/better-auth/options.ts`:
 
 ```bash
-bun run auth:generate      # regenerates src/db/schema.ts from better-auth.config.ts
-bun run db:generate        # drizzle-kit turns schema.ts into drizzle/NNNN_*.sql
-bun run db:migrate:local   # wrangler d1 migrations apply --local
-bun run db:migrate:remote  # wrangler d1 migrations apply --remote
+mise run auth:generate    # regenerates src/db/schema.ts from better-auth.config.ts
+mise run db:generate      # drizzle-kit turns schema.ts into drizzle/NNNN_*.sql
+mise run migrate:local    # wrangler d1 migrations apply --local
+mise run migrate:remote   # wrangler d1 migrations apply --remote
 ```
 
 `better-auth.config.ts` uses an in-memory `better-sqlite3` DB because the CLI doesn't need a real connection to emit drizzle table definitions — only the adapter shape.
@@ -51,35 +67,14 @@ bun run db:migrate:remote  # wrangler d1 migrations apply --remote
 ## Deploy
 
 ```bash
-# one-time
-wrangler d1 migrations apply {{ d1_database_name }} --remote
-wrangler secret put BETTER_AUTH_SECRET   # paste `openssl rand -base64 32`
-
-# every deploy
-cd web && bun run build && cd ..
-wrangler deploy
+mise run migrate:remote
+mise run secret:put       # generates + uploads BETTER_AUTH_SECRET
+mise run deploy
 ```
 
-After the first deploy, update `vars.BETTER_AUTH_URL` in `wrangler.jsonc` to the `*.workers.dev` URL (or custom domain) and redeploy — better-auth uses it to issue redirects and cookies.
+After the first deploy, update `vars.BETTER_AUTH_URL` in `wrangler.jsonc` to the `*.workers.dev` URL (or custom domain) and `mise run deploy` again — better-auth uses it to issue redirects and cookies.
 
-## Commands
-
-Root (Worker):
-```bash
-bun run dev                   # wrangler dev — local Worker + local D1 + SPA dist
-bun run typecheck             # tsc --noEmit against worker-configuration.d.ts
-bun run cf-typegen            # wrangler types (regenerate after wrangler.jsonc edits)
-bun run deploy                # wrangler deploy
-```
-
-Web:
-```bash
-cd web && bun run dev         # vite dev server on :5173 (proxy API to :8787 if needed)
-cd web && bun run build       # MUST run before wrangler dev/deploy — Worker serves web/dist
-cd web && bun run typecheck
-```
-
-The Worker serves `web/dist`, so edits to the SPA are not visible until `bun run build` in `web/`. For live SPA iteration, run `vite dev` directly and point it at `http://localhost:8787/api/*` via a proxy.
+The Worker serves `web/dist`, so SPA edits aren't visible until `mise run web:build` (which `mise run dev`/`mise run deploy` do automatically). For live SPA iteration, `cd web && bun run dev` starts the Vite dev server on :5173; point it at `http://localhost:8787/api/*` via a proxy.
 
 ## Auth-specific gotchas
 

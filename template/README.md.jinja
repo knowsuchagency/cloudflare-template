@@ -8,48 +8,40 @@ Cloudflare Worker that serves [Better Auth](https://better-auth.com) and a shadc
 
 ## Quickstart
 
+All project commands are defined as [mise](https://mise.jdx.dev/) tasks. If you don't have mise, `curl https://mise.run | sh` or `brew install mise`.
+
 ```bash
-# 1. Authenticate wrangler (one-time)
-bunx wrangler login
-
-# 2. Create the D1 database and paste the returned database_id into wrangler.jsonc
-bunx wrangler d1 create {{ d1_database_name }}
-
-# 3. Local secrets
-cat > .dev.vars <<EOF
-BETTER_AUTH_URL=http://localhost:8787
-BETTER_AUTH_SECRET=$(openssl rand -base64 32)
-EOF
-
-# 4. Apply the initial migration locally
-bun run db:migrate:local
-
-# 5. Run
-bun run dev                   # http://localhost:8787
+mise install                  # pin bun + node per mise.toml
+mise run install              # bun install in root + web/
+mise run init                 # write .dev.vars with a fresh BETTER_AUTH_SECRET
+bunx wrangler login           # one-time CF auth (interactive)
+mise run d1:create            # create the remote D1, paste the id into wrangler.jsonc
+mise run migrate:local        # seed local D1 with the initial migration
+mise run dev                  # http://localhost:8787
 ```
 
-## Commands
+## Tasks
 
-| Command | What it does |
+Run `mise tasks` for the full list. Highlights:
+
+| Task | What it does |
 |---|---|
-| `bun run dev` | `wrangler dev` — Worker + local D1 + SPA dist |
-| `bun run deploy` | `wrangler deploy` |
-| `bun run typecheck` | `tsc --noEmit` against the generated Env types |
-| `bun run cf-typegen` | regenerate `worker-configuration.d.ts` after wrangler.jsonc edits |
-| `bun run auth:generate` | re-emit `src/db/schema.ts` from `better-auth.config.ts` |
-| `bun run db:generate` | drizzle-kit migration from the new schema |
-| `bun run db:migrate:local` | apply migrations to the local D1 |
-| `bun run db:migrate:remote` | apply migrations to the remote D1 |
-| `cd web && bun run build` | build the SPA into `web/dist` — **required before `wrangler dev` or `wrangler deploy`** |
+| `mise run dev` | Build the SPA (if stale) and start `wrangler dev` |
+| `mise run web:build` | Build the Vite SPA into `web/dist` (source-tracked — re-runs only when inputs change) |
+| `mise run typecheck` | Typecheck Worker + web |
+| `mise run auth:generate` | Regenerate `src/db/schema.ts` from `better-auth.config.ts` |
+| `mise run db:generate` | `drizzle-kit generate` (emit SQL from the new schema) |
+| `mise run migrate:local` / `migrate:remote` | Apply D1 migrations |
+| `mise run secret:put` | Generate + upload a fresh `BETTER_AUTH_SECRET` to the remote Worker |
+| `mise run deploy` | Build the SPA and `wrangler deploy` |
 
 ## Deploy
 
 ```bash
-bunx wrangler d1 migrations apply {{ d1_database_name }} --remote
-bunx wrangler secret put BETTER_AUTH_SECRET            # paste openssl rand -base64 32
-cd web && bun run build && cd ..
-bunx wrangler deploy
-# After first deploy: update vars.BETTER_AUTH_URL in wrangler.jsonc to the *.workers.dev URL, then redeploy.
+mise run migrate:remote
+mise run secret:put           # generates + uploads BETTER_AUTH_SECRET
+mise run deploy
+# After first deploy: update vars.BETTER_AUTH_URL in wrangler.jsonc to the *.workers.dev URL, then `mise run deploy` again.
 ```
 
 See `CLAUDE.md` for the full architecture, schema-generation flow, and auth-specific gotchas.

@@ -19,19 +19,19 @@ _tasks:
   - "bunx wrangler types"
 
 _message_after_copy: |
-  Project generated.
+  Project generated. All project commands are mise tasks.
 
   Next steps:
-    1. Authenticate wrangler (one-time): bunx wrangler login
-    2. Create the D1 database:            bunx wrangler d1 create {{ d1_database_name }}
-    3. Paste the returned database_id into wrangler.jsonc
-    4. Create .dev.vars with:
-         BETTER_AUTH_URL=http://localhost:8787
-         BETTER_AUTH_SECRET=$(openssl rand -base64 32)
-    5. Apply migrations locally:          bun run db:migrate:local
-    6. Start dev server:                  bun run dev
+    mise install              # install bun + node per mise.toml
+    mise run install          # bun install in root + web/
+    mise run init             # write .dev.vars with a fresh BETTER_AUTH_SECRET
+    bunx wrangler login       # one-time CF auth
+    mise run d1:create        # create the remote D1; paste the id into wrangler.jsonc
+    mise run migrate:local
+    mise run dev              # http://localhost:8787
 
-  See CLAUDE.md for the full deployment flow.
+  `mise tasks` lists everything else (auth:generate, db:generate,
+  migrate:remote, secret:put, deploy). See CLAUDE.md for architecture.
 
 project_slug:
   type: str
