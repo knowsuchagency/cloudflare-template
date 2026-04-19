@@ -34,8 +34,7 @@ First-run checklist:
 
 ```bash
 mise install              # pin bun + node
-mise run install          # bun install in root + web/
-mise run init             # write .dev.vars with a fresh BETTER_AUTH_SECRET
+mise run setup            # bun install in root + web/, seed .dev.vars
 bunx wrangler login       # one-time CF auth
 mise run d1:create        # create the remote D1; paste the id into wrangler.jsonc
 mise run migrate:local

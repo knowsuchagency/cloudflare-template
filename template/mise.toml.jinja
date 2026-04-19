@@ -6,22 +6,17 @@ node = "22"
 #
 # First-time setup for a new checkout:
 #   mise install              # pin bun + node per [tools]
-#   mise run install          # bun install in root and web/
-#   mise run init             # create .dev.vars with a fresh BETTER_AUTH_SECRET
+#   mise run setup            # bun install in root + web/, seed .dev.vars
 #   mise run d1:create        # create the remote D1; paste id into wrangler.jsonc
 #   mise run migrate:local    # seed local D1 with the initial migration
 #   mise run dev              # http://localhost:8787
 
-[tasks.install]
-description = "bun install in Worker + web"
-run = [
-  "bun install",
-  "bun install --cwd web",
-]
-
-[tasks.init]
-description = "Create .dev.vars with a fresh BETTER_AUTH_SECRET"
+[tasks.setup]
+description = "Install deps in Worker + web and create .dev.vars"
 run = '''
+bun install
+bun install --cwd web
+
 if [ -f .dev.vars ]; then
   echo "• .dev.vars already exists — leaving it alone"
 else
