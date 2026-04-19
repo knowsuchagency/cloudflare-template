@@ -1,0 +1,187 @@
+import { useState } from "react";
+import { SpinnerIcon, SignInIcon, UserPlusIcon } from "@phosphor-icons/react";
+import { toast } from "sonner";
+
+import { authClient } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export function LoginCard({ onAuthed }: { onAuthed: () => void }) {
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl">Better Auth on D1</CardTitle>
+        <CardDescription>
+          Hono worker, Drizzle adapter, Cloudflare D1.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="sign-in">
+          <TabsList className="w-full">
+            <TabsTrigger value="sign-in">Sign in</TabsTrigger>
+            <TabsTrigger value="sign-up">Sign up</TabsTrigger>
+          </TabsList>
+          <TabsContent value="sign-in" className="pt-4">
+            <SignInForm onAuthed={onAuthed} />
+          </TabsContent>
+          <TabsContent value="sign-up" className="pt-4">
+            <SignUpForm onAuthed={onAuthed} />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SignInForm({ onAuthed }: { onAuthed: () => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setPending(true);
+    try {
+      await authClient.signIn({ email, password });
+      toast.success("Signed in");
+      onAuthed();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Sign in failed";
+      setError(message);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <FieldGroup>
+        <Field data-invalid={error ? true : undefined}>
+          <FieldLabel htmlFor="signin-email">Email</FieldLabel>
+          <Input
+            id="signin-email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={error ? true : undefined}
+          />
+        </Field>
+        <Field data-invalid={error ? true : undefined}>
+          <FieldLabel htmlFor="signin-password">Password</FieldLabel>
+          <Input
+            id="signin-password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={error ? true : undefined}
+          />
+          <FieldError>{error}</FieldError>
+        </Field>
+        <Button type="submit" disabled={pending} className="w-full">
+          {pending ? (
+            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+          ) : (
+            <SignInIcon data-icon="inline-start" />
+          )}
+          Sign in
+        </Button>
+      </FieldGroup>
+    </form>
+  );
+}
+
+function SignUpForm({ onAuthed }: { onAuthed: () => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setPending(true);
+    try {
+      await authClient.signUp({ name, email, password });
+      toast.success("Account created");
+      onAuthed();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Sign up failed";
+      setError(message);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="signup-name">Name</FieldLabel>
+          <Input
+            id="signup-name"
+            autoComplete="name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="signup-email">Email</FieldLabel>
+          <Input
+            id="signup-email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </Field>
+        <Field data-invalid={error ? true : undefined}>
+          <FieldLabel htmlFor="signup-password">Password</FieldLabel>
+          <Input
+            id="signup-password"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={error ? true : undefined}
+          />
+          <FieldDescription>At least 8 characters.</FieldDescription>
+          <FieldError>{error}</FieldError>
+        </Field>
+        <Button type="submit" disabled={pending} className="w-full">
+          {pending ? (
+            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+          ) : (
+            <UserPlusIcon data-icon="inline-start" />
+          )}
+          Create account
+        </Button>
+      </FieldGroup>
+    </form>
+  );
+}

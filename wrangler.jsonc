@@ -9,11 +9,17 @@
     {
       "binding": "DB",
       "database_name": "better-auth-experiment",
-      "database_id": "REPLACE_WITH_ID_FROM_wrangler_d1_create",
+      "database_id": "35430b39-bb8b-4ba7-95bc-f927a23131fb",
       "migrations_dir": "./drizzle"
     }
   ],
+  "assets": {
+    "directory": "./web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
   "vars": {
-    "BETTER_AUTH_URL": "http://localhost:8787"
+    "BETTER_AUTH_URL": "https://cloudflare-better-auth-experiment.knowsuchagency.workers.dev"
   }
 }

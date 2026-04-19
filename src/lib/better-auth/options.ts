@@ -6,4 +6,9 @@ export const betterAuthOptions: BetterAuthOptions = {
   emailAndPassword: {
     enabled: true,
   },
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders: ["cf-connecting-ip"],
+    },
+  },
 };
