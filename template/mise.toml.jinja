@@ -17,11 +17,15 @@ node = "22"
 # Every subsequent CF-touching task (d1:create, migrate:remote, deploy,
 # teardown) also reads CLOUDFLARE_API_TOKEN from the environment, so just
 # keep it exported.
+#
+# To also create a private GitHub repo in the same step, pass --github:
+#   mise run setup --github          # or combine: --headless --github
 
 [tasks.setup]
-description = "Install deps in Worker + web and create .dev.vars (pass --headless to verify CLOUDFLARE_API_TOKEN)"
+description = "Install deps, seed .dev.vars, and optionally create a private GitHub repo"
 usage = '''
 flag "--headless" help="verify CLOUDFLARE_API_TOKEN via wrangler whoami before installing"
+flag "--github"   help="git-init (if needed), commit, and create a private GitHub repo named {{ project_slug }} with upstream set"
 '''
 run = '''
 if [ "${usage_headless:-false}" = "true" ]; then
@@ -43,6 +47,20 @@ if [ "${usage_headless:-false}" = "true" ]; then
   echo "✓ wrangler authenticated"
 fi
 
+if [ "${usage_github:-false}" = "true" ]; then
+  command -v gh >/dev/null 2>&1 || { echo "✗ --github requires the gh CLI (https://cli.github.com)" >&2; exit 1; }
+  gh auth status >/dev/null 2>&1 || { echo "✗ gh is not authenticated — run: gh auth login" >&2; exit 1; }
+  if [ ! -d .git ]; then
+    git init -b main >/dev/null
+    echo "✓ git initialized"
+  fi
+  if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
+    git add -A
+    git commit -q -m "initial commit from cloudflare-better-auth-d1 template"
+    echo "✓ initial commit"
+  fi
+fi
+
 bun install
 bun install --cwd web
 
@@ -54,6 +72,15 @@ else
     printf 'BETTER_AUTH_SECRET=%s\n' "$(openssl rand -base64 32)"
   } > .dev.vars
   echo "✓ created .dev.vars"
+fi
+
+if [ "${usage_github:-false}" = "true" ]; then
+  if git remote get-url origin >/dev/null 2>&1; then
+    echo "• origin already set — skipping gh repo create"
+  else
+    gh repo create "{{ project_slug }}" --private --source=. --push
+    echo "✓ private GitHub repo created and upstream set"
+  fi
 fi
 '''
 

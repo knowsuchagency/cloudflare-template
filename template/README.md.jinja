@@ -31,6 +31,10 @@ mise run d1:create             # every subsequent CF task reads the same env var
 
 With a secret manager like [fnox](https://github.com/jdx/fnox): `fnox exec -- mise run setup --headless`.
 
+### Push to a new private GitHub repo
+
+Pass `--github` to `setup` to `git init` (if needed), stage + commit the template content, create a private GitHub repo named `{{ project_slug }}`, and push `main` with upstream set. Requires the [gh CLI](https://cli.github.com) authenticated (`gh auth login`). Combine with `--headless` if you want both in one shot: `mise run setup --headless --github`.
+
 ## Tasks
 
 Run `mise tasks` for the full list. Highlights:
