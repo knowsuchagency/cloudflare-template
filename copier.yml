@@ -4,11 +4,6 @@ _templates_suffix: .jinja
 _answers_file: .copier-answers.yml
 
 _exclude:
-  - "copier.yml"
-  - "README.md"
-  - ".git"
-  - ".jj"
-  - ".copier-answers.yml"
   - "node_modules"
   - "**/node_modules"
   - ".wrangler"
