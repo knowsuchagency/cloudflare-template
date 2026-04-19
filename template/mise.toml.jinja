@@ -5,7 +5,7 @@ node = "22"
 # Tasks — run `mise tasks` to list them.
 #
 # First-time setup for a new checkout:
-#   mise install              # pin bun + node per [tools]
+#   mise install              # pin bun + node per [tools] (copier already ran this on render)
 #   bunx wrangler login       # one-time CF auth (skip if you're going headless)
 #   mise init                 # installs deps, seeds .dev.vars, applies local D1
 #                             # migrations, provisions remote D1 + BETTER_AUTH_SECRET,
@@ -195,13 +195,42 @@ openssl rand -base64 32 | bunx wrangler secret put BETTER_AUTH_SECRET
 '''
 
 [tasks.deploy]
-description = "Build the SPA and deploy the Worker"
+description = "Build the SPA and deploy the Worker (auto-patches BETTER_AUTH_URL on first deploy)"
 depends = ["web:build"]
 run = '''
 if grep -q REPLACE_WITH_ID_FROM_wrangler_d1_create wrangler.jsonc; then
   echo "✗ wrangler.jsonc still has the D1 id placeholder — run: mise run d1:create" >&2
   exit 1
 fi
+
+placeholder='"BETTER_AUTH_URL": "http://localhost:8787"'
+
+deploy_out=$(bunx wrangler deploy 2>&1) || {
+  printf '%s\n' "$deploy_out" >&2
+  exit 1
+}
+printf '%s\n' "$deploy_out"
+
+if ! grep -qF "$placeholder" wrangler.jsonc; then
+  exit 0
+fi
+
+# Extract the canonical *.workers.dev URL wrangler prints under "Deployed <worker> triggers".
+# The worker-name-scoped regex skips Cloudflare preview URLs (https://{version}-{worker}...).
+url=$(printf '%s' "$deploy_out" | grep -oE "https://{{ worker_name }}\.[a-z0-9-]+\.workers\.dev" | head -1)
+
+if [ -z "$url" ]; then
+  echo "⚠ wrangler deploy succeeded but no *.workers.dev URL was found in its output." >&2
+  echo "  If you are using a custom domain or have disabled workers.dev, edit" >&2
+  echo "  vars.BETTER_AUTH_URL in wrangler.jsonc and re-run 'mise run deploy'." >&2
+  exit 0
+fi
+
+replacement="\"BETTER_AUTH_URL\": \"$url\""
+tmp=$(mktemp)
+sed "s|$placeholder|$replacement|" wrangler.jsonc > "$tmp" && mv "$tmp" wrangler.jsonc
+echo "✓ wrangler.jsonc patched: BETTER_AUTH_URL → $url"
+echo "↻ redeploying so the Worker env picks up the new BETTER_AUTH_URL..."
 bunx wrangler deploy
 '''
 
