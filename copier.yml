@@ -24,10 +24,15 @@ _message_after_copy: |
   Next steps:
     mise install              # install bun + node per mise.toml
     mise run setup            # bun install in root + web/, seed .dev.vars
-    bunx wrangler login       # one-time CF auth
+    bunx wrangler login       # one-time CF auth (or see headless below)
     mise run d1:create        # create the remote D1; paste the id into wrangler.jsonc
     mise run migrate:local
     mise run dev              # http://localhost:8787
+
+  Headless Linux / no browser? `wrangler login` fails with
+  "Missing file or directory: xdg-open". Copy .env.local.example to
+  .env.local and fill in CLOUDFLARE_API_TOKEN (or the API key +
+  email fallback). mise loads it into every task automatically.
 
   `mise tasks` lists everything else (auth:generate, db:generate,
   migrate:remote, secret:put, deploy). See CLAUDE.md for architecture.

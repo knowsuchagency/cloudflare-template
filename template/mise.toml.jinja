@@ -2,6 +2,14 @@
 bun = "1.3.3"
 node = "22"
 
+[env]
+# Load .env.local (gitignored) into every mise task. Handy on headless
+# boxes where `wrangler login` can't open a browser — set
+#   CLOUDFLARE_API_TOKEN=...                     # scoped token, preferred, OR
+#   CLOUDFLARE_API_KEY=... CLOUDFLARE_EMAIL=...  # global key fallback
+# in .env.local and wrangler picks them up automatically.
+_.file = { path = ".env.local", redact = true }
+
 # Tasks — run `mise tasks` to list them.
 #
 # First-time setup for a new checkout:

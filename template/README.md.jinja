@@ -13,11 +13,22 @@ All project commands are defined as [mise](https://mise.jdx.dev/) tasks. If you 
 ```bash
 mise install                  # pin bun + node per mise.toml
 mise run setup                # bun install in root + web/, seed .dev.vars with a fresh secret
-bunx wrangler login           # one-time CF auth (interactive)
+bunx wrangler login           # one-time CF auth (interactive — see below for headless)
 mise run d1:create            # create the remote D1, paste the id into wrangler.jsonc
 mise run migrate:local        # seed local D1 with the initial migration
 mise run dev                  # http://localhost:8787
 ```
+
+### Headless auth (no browser)
+
+`bunx wrangler login` fails on a headless box with `Missing file or directory: xdg-open`. Skip it and use env vars instead:
+
+```bash
+cp .env.local.example .env.local
+# edit .env.local to set CLOUDFLARE_API_TOKEN (or CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL)
+```
+
+`mise.toml` loads `.env.local` into every task, so `mise run d1:create`, `mise run deploy`, etc. pick up the creds automatically. Verify with `mise run -- bunx wrangler whoami`.
 
 ## Tasks
 
