@@ -21,14 +21,15 @@ mise run dev                  # http://localhost:8787
 
 ### Headless auth (no browser)
 
-`bunx wrangler login` fails on a headless box with `Missing file or directory: xdg-open`. Skip it and use env vars instead:
+`bunx wrangler login` fails on a headless box with `Missing file or directory: xdg-open`. Instead, export credentials as env vars (either a scoped `CLOUDFLARE_API_TOKEN` — preferred, create at <https://dash.cloudflare.com/profile/api-tokens> with Workers Scripts:Edit + D1:Edit — or the `CLOUDFLARE_API_KEY` + `CLOUDFLARE_EMAIL` global-key pair) and pass `--headless` to `setup`:
 
 ```bash
-cp .env.local.example .env.local
-# edit .env.local to set CLOUDFLARE_API_TOKEN (or CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL)
+export CLOUDFLARE_API_TOKEN=...
+mise run setup --headless     # validates via `wrangler whoami` before installing
+mise run d1:create             # every subsequent CF task reads the same env vars
 ```
 
-`mise.toml` loads `.env.local` into every task, so `mise run d1:create`, `mise run deploy`, etc. pick up the creds automatically. Verify with `mise run -- bunx wrangler whoami`.
+With a secret manager like [fnox](https://github.com/jdx/fnox): `fnox exec -- mise run setup --headless`.
 
 ## Tasks
 
@@ -44,6 +45,7 @@ Run `mise tasks` for the full list. Highlights:
 | `mise run migrate:local` / `migrate:remote` | Apply D1 migrations |
 | `mise run secret:put` | Generate + upload a fresh `BETTER_AUTH_SECRET` to the remote Worker |
 | `mise run deploy` | Build the SPA and `wrangler deploy` |
+| `mise run teardown` | Delete the remote Worker and D1 database (irreversible) |
 
 ## Deploy
 
