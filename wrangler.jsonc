@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cloudflare-better-auth-experiment",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "better-auth-experiment",
+      "database_id": "REPLACE_WITH_ID_FROM_wrangler_d1_create",
+      "migrations_dir": "./drizzle"
+    }
+  ],
+  "vars": {
+    "BETTER_AUTH_URL": "http://localhost:8787"
+  }
+}
