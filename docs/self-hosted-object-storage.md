@@ -22,7 +22,7 @@ Together: a Worker does `env.S3.fetch(signedRequest)` against a self-hosted S3 g
 
 ## Prerequisites
 
-- Rendered project with Mode 2 complete — `deploy/db-tunnel.compose.yml` (or the `backend.compose.yml` variant below) already running, tunnel provisioned by `scripts/cf-setup.py`.
+- Rendered project with Mode 2 complete — see [`self-hosted-database.md`](self-hosted-database.md). You need the `deploy/backend.compose.yml` (postgres + cloudflared) already running, tunnel provisioned by `scripts/cf-setup.py`.
 - `CF_TUNNEL_ID` known (printed by `scripts/cf-setup.py`).
 - A second hostname in your zone (e.g. `s3.${project_slug}.example.com`).
 - `wrangler` ≥ 4.83 (ships `wrangler vpc service` subcommands).
@@ -30,9 +30,9 @@ Together: a Worker does `env.S3.fetch(signedRequest)` against a self-hosted S3 g
 
 ## Configuration
 
-### 1. Rename and extend the compose
+### 1. Extend the backend compose
 
-Rename `deploy/db-tunnel.compose.yml` → `deploy/backend.compose.yml` to reflect that it now hosts more than the DB, and add the versitygw service + volume:
+Add the versitygw service + volume to `deploy/backend.compose.yml` (the compose that already hosts postgres + cloudflared):
 
 ```yaml
 services:
@@ -67,7 +67,7 @@ Also update `cloudflared`'s `depends_on` to wait for `versitygw: service_started
 
 ### 2. Extend the tunnel ingress
 
-`scripts/cf-setup.py` (the one from `migrations/01-d1-to-hybrid/scripts/`) accepts an optional `S3_HOSTNAME` env var that adds a second HTTP ingress (no Access gate — the VPC binding is the isolation) and a second DNS CNAME. Rerun with both hostnames set; the script is idempotent:
+`scripts/cf-setup.py` accepts an optional `S3_HOSTNAME` env var that adds a second HTTP ingress (no Access gate — the VPC binding is the isolation) and a second DNS CNAME. Rerun with both hostnames set; the script is idempotent:
 
 ```bash
 fnox exec -- env \
@@ -82,7 +82,7 @@ fnox exec -- env \
 
 Copy the emitted `tunnel_id`.
 
-> If your copy of `cf-setup.py` pre-dates the S3 extension, pull the latest version from `migrations/01-d1-to-hybrid/scripts/cf-setup.py` in this template or from [`knowsuchagency/vpc-test`](https://github.com/knowsuchagency/vpc-test/blob/main/scripts/cf-setup.py).
+> If your copy of `cf-setup.py` pre-dates the `S3_HOSTNAME` extension, pull the latest from [`knowsuchagency/vpc-test`'s `scripts/cf-setup.py`](https://github.com/knowsuchagency/vpc-test/blob/main/scripts/cf-setup.py).
 
 ### 3. Register the Workers VPC service
 
@@ -233,6 +233,19 @@ The gateway speaks standard S3 SigV4. A few notes:
 
 R2 remains the right default for public objects with heavy egress. versitygw makes sense when data sovereignty, infra colocation, or local parity matters more than the global CDN.
 
-## Reference
+## Reference implementation
 
-Live proof: [`knowsuchagency/vpc-test`](https://github.com/knowsuchagency/vpc-test). See `deploy/backend.compose.yml` (versitygw + postgres + cloudflared), `scripts/cf-setup.py` (idempotent two-ingress provisioning), `mise.toml` `vpc-service:create` (wrangler patching), and `src/app.ts` `/api/s3/ping`.
+Live on [`knowsuchagency/vpc-test`](https://github.com/knowsuchagency/vpc-test). Drop-in files:
+
+- [`deploy/backend.compose.yml`](https://github.com/knowsuchagency/vpc-test/blob/main/deploy/backend.compose.yml) — postgres + versitygw + cloudflared with both ingresses on one tunnel.
+- [`scripts/cf-setup.py`](https://github.com/knowsuchagency/vpc-test/blob/main/scripts/cf-setup.py) — idempotent two-ingress provisioning (the `S3_HOSTNAME` branch).
+- [`mise.toml` `vpc-service:create` task](https://github.com/knowsuchagency/vpc-test/blob/main/mise.toml) — the `wrangler vpc service create` + `wrangler.jsonc` patching flow.
+- [`src/app.ts`](https://github.com/knowsuchagency/vpc-test/blob/main/src/app.ts) — the `/api/s3/ping` handler.
+- [`src/lib/env-bun.ts`](https://github.com/knowsuchagency/vpc-test/blob/main/src/lib/env-bun.ts) — the Mode 3 Fetcher shim.
+
+Live URLs:
+
+- Mode 2 (Worker via VPC binding): https://vpc-test.knowsuchagency.workers.dev/api/s3/ping
+- Mode 3 (Bun direct on dokploy-network): https://vpc-test-app.knowsuchagency.ai/api/s3/ping
+
+Both return the same `ListAllMyBucketsResult` XML against one versitygw backing store.

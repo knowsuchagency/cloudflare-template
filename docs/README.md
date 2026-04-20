@@ -8,20 +8,20 @@ This template defaults to a pure-Cloudflare stack — Worker + D1 + the SPA serv
 
 A rendered project is made of four independent pieces:
 
-| Piece           | Default (Mode 1)         | Self-hosted alternative                   | How to move it                                                                 |
-|-----------------|--------------------------|-------------------------------------------|--------------------------------------------------------------------------------|
-| Runtime         | Cloudflare Worker        | Bun + Hono container on Dokploy           | [`migrations/02-hybrid-to-dokploy.md`](../migrations/02-hybrid-to-dokploy.md)  |
-| Relational DB   | D1 (SQLite)              | Postgres behind a Cloudflare Tunnel       | [`migrations/01-d1-to-hybrid.md`](../migrations/01-d1-to-hybrid.md)            |
-| Object storage  | *(none by default)*      | versitygw (S3-compatible) + Workers VPC   | [`self-hosted-object-storage.md`](self-hosted-object-storage.md)               |
-| Edge assets     | Cloudflare Assets        | `hono/bun` serveStatic (bundled in Mode 3)| (part of the Mode-3 playbook)                                                  |
+| Piece           | Default (Mode 1)         | Self-hosted alternative                   | How to move it                                                  |
+|-----------------|--------------------------|-------------------------------------------|-----------------------------------------------------------------|
+| Runtime         | Cloudflare Worker        | Bun + Hono container on Dokploy           | [`self-hosted-runtime.md`](self-hosted-runtime.md)              |
+| Relational DB   | D1 (SQLite)              | Postgres behind a Cloudflare Tunnel       | [`self-hosted-database.md`](self-hosted-database.md)            |
+| Object storage  | *(none by default)*      | versitygw (S3-compatible) + Workers VPC   | [`self-hosted-object-storage.md`](self-hosted-object-storage.md)|
+| Edge assets     | Cloudflare Assets        | `hono/bun` serveStatic (bundled in Mode 3)| (part of the runtime walk-through)                              |
 
-The pieces are independent. You can move just the DB (Mode 2). You can move everything (Mode 3). You can add self-hosted object storage on top of any mode (the third row, this is a new capability — see the dedicated doc).
+The pieces are independent. You can move just the DB (Mode 2). You can move everything (Mode 3). You can add self-hosted object storage on top of any mode.
 
 ## The three named modes
 
 - **Mode 1 — Full CF (default).** Worker + D1 + Assets. `mise init && mise deploy` renders a deployed app. No infra to run.
-- **Mode 2 — Hybrid.** Worker + `env.HYPERDRIVE` → Cloudflare Tunnel (Access-gated) → self-hosted Postgres. SPA stays on CF Assets. Keeps edge latency and cache behaviour; moves only the data layer. Execute via [`migrations/01-d1-to-hybrid.md`](../migrations/01-d1-to-hybrid.md).
-- **Mode 3 — Dokploy.** Bun + Hono container, Postgres on the same `dokploy-network` overlay. No CF runtime or tunnel in the data path. Maximum sovereignty. Execute via [`migrations/02-hybrid-to-dokploy.md`](../migrations/02-hybrid-to-dokploy.md) after Mode 2.
+- **Mode 2 — Hybrid.** Worker + `env.HYPERDRIVE` → Cloudflare Tunnel (Access-gated) → self-hosted Postgres. SPA stays on CF Assets. Keeps edge latency and cache behaviour; moves only the data layer. See [`self-hosted-database.md`](self-hosted-database.md).
+- **Mode 3 — Dokploy.** Bun + Hono container, Postgres on the same `dokploy-network` overlay. No CF runtime or tunnel in the data path. Maximum sovereignty. See [`self-hosted-runtime.md`](self-hosted-runtime.md) (do Mode 2 first).
 
 Add self-hosted object storage to **any mode** via [`self-hosted-object-storage.md`](self-hosted-object-storage.md).
 
@@ -78,12 +78,14 @@ Moving off CF in any direction costs you some combination of: edge-distributed r
 - **Mode 3:** you also own the runtime. No more CF DDoS protection in front of the app origin — put Traefik or similar in front; Cloudflare can still proxy the hostname as an L7 DDoS shield.
 - **Self-hosted S3:** you own durability. versitygw is POSIX — back up the data dir. No automatic replication.
 
-## Proof
+## Reference implementation
 
-Every path in this directory has been executed end-to-end on the [`knowsuchagency/vpc-test`](https://github.com/knowsuchagency/vpc-test) project:
+This template stays minimal by design — it ships the default Mode 1 stack and the docs that tell you what can move and how. The working reference for all three escape hatches lives in a separate repo:
+
+**[`knowsuchagency/vpc-test`](https://github.com/knowsuchagency/vpc-test)** — a fully-rendered project that has every mode implemented and deployed.
 
 - Mode 2 live: https://vpc-test.knowsuchagency.workers.dev (Worker → Hyperdrive → CF Tunnel → Dokploy postgres)
 - Mode 3 live: https://vpc-test-app.knowsuchagency.ai (Bun + Hono on Dokploy, same postgres)
-- Self-hosted S3 live on both modes: `/api/s3/ping` returns the same `ListAllMyBucketsResult` XML from Workers and from the Bun container, hitting a shared versitygw backing store.
+- Self-hosted S3 live on both: `/api/s3/ping` returns the same `ListAllMyBucketsResult` XML from Workers and from the Bun container, hitting a shared versitygw backing store.
 
-Scaffolds in `../migrations/` were lifted from that repo after verification. The configuration example in [`self-hosted-object-storage.md`](self-hosted-object-storage.md) was likewise lifted from it.
+Each `self-hosted-*.md` doc in this directory links to the specific files in `vpc-test` you'd copy into your project. The pattern is: read the doc for the pattern and decision context, then lift the scaffolds from `vpc-test` when executing.

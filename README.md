@@ -25,15 +25,13 @@ Post-generation, copier runs `bun install`, `cd web && bun install && bun run bu
 
 ## Self-hosting strategy
 
-The default rendered project is vanilla Cloudflare + D1 — right for ~90% of projects. When it isn't, a rendered project can move selected pieces (DB, object storage, runtime) onto your own infra without a rewrite. [`docs/README.md`](docs/README.md) is the umbrella doc: what can move, why you'd reach for each escape hatch, and the cost / trade-off shape of each mode.
+The default rendered project is vanilla Cloudflare + D1 — right for ~90% of projects. When it isn't, a rendered project can move selected pieces (DB, object storage, runtime) onto your own infra without a rewrite. [`docs/`](docs/) documents each escape hatch:
 
-Mechanical execution lives under `migrations/`, designed to be handed off to a coding agent:
-
-- [`migrations/01-d1-to-hybrid.md`](migrations/01-d1-to-hybrid.md) — swap D1 for self-hosted Postgres reached by the Worker via Hyperdrive + a Cloudflare Tunnel (Worker stays).
-- [`migrations/02-hybrid-to-dokploy.md`](migrations/02-hybrid-to-dokploy.md) — swap the Worker for a Bun + Hono container on Dokploy serving both `/api/*` and the SPA.
+- [`docs/self-hosted-database.md`](docs/self-hosted-database.md) — swap D1 for self-hosted Postgres reached by the Worker via Hyperdrive + a Cloudflare Tunnel (Worker stays).
+- [`docs/self-hosted-runtime.md`](docs/self-hosted-runtime.md) — swap the Worker for a Bun + Hono container on Dokploy serving both `/api/*` and the SPA.
 - [`docs/self-hosted-object-storage.md`](docs/self-hosted-object-storage.md) — add an S3-compatible gateway (versitygw) reached by the Worker over a Workers VPC `vpc_services` binding on the same tunnel.
 
-Each playbook ships with drop-in scaffold files in its sibling directory. Proven end-to-end on [`knowsuchagency/vpc-test`](https://github.com/knowsuchagency/vpc-test). See [`docs/README.md`](docs/README.md) for the decision framework or [`migrations/README.md`](migrations/README.md) for the agent-handoff format.
+Each doc describes the pattern, trade-offs, and order of operations, and links to the working reference in [`knowsuchagency/vpc-test`](https://github.com/knowsuchagency/vpc-test) for the drop-in files. See [`docs/README.md`](docs/README.md) for the decision framework (when to reach for each).
 
 ## Developing this template
 
