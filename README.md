@@ -23,14 +23,15 @@ You'll be asked for:
 
 Post-generation, copier runs `bun install`, `cd web && bun install && bun run build`, and `wrangler types`. Follow the message printed afterwards to create the D1 database and deploy.
 
-## Migration paths
+## Self-hosting strategy
 
-The default rendered project is vanilla Cloudflare + D1. Two tested migration paths off D1 live under `migrations/` and are designed to be handed off to a coding agent:
+The default rendered project is vanilla Cloudflare + D1 — right for ~90% of projects. When it isn't, a rendered project can move selected pieces (DB, object storage, runtime) onto your own infra without a rewrite. [`docs/`](docs/) documents each escape hatch:
 
-- [`migrations/01-d1-to-hybrid.md`](migrations/01-d1-to-hybrid.md) — swap D1 for self-hosted Postgres reached by the Worker via Hyperdrive + a Cloudflare Tunnel (Worker stays).
-- [`migrations/02-hybrid-to-dokploy.md`](migrations/02-hybrid-to-dokploy.md) — swap the Worker for a Bun + Hono container on Dokploy serving both `/api/*` and the SPA.
+- [`docs/self-hosted-database.md`](docs/self-hosted-database.md) — swap D1 for self-hosted Postgres reached by the Worker via Hyperdrive + a Cloudflare Tunnel (Worker stays).
+- [`docs/self-hosted-runtime.md`](docs/self-hosted-runtime.md) — swap the Worker for a Bun + Hono container on Dokploy serving both `/api/*` and the SPA.
+- [`docs/self-hosted-object-storage.md`](docs/self-hosted-object-storage.md) — add an S3-compatible gateway (versitygw) reached by the Worker over a Workers VPC `vpc_services` binding on the same tunnel.
 
-Each playbook ships with drop-in scaffold files in its sibling directory. Proven end-to-end on `knowsuchagency/vpc-test`. See [`migrations/README.md`](migrations/README.md) for framing.
+Each doc describes the pattern, trade-offs, and order of operations, and links to the working reference in [`knowsuchagency/vpc-test`](https://github.com/knowsuchagency/vpc-test) for the drop-in files. See [`docs/README.md`](docs/README.md) for the decision framework (when to reach for each).
 
 ## Developing this template
 
