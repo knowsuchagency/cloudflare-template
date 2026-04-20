@@ -1,0 +1,11 @@
+node_modules
+web/node_modules
+web/dist
+.wrangler
+.git
+.jj
+.dev.vars
+.env
+.env.local
+dist
+*.log

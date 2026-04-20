@@ -1,0 +1,33 @@
+# Mode 3 (Dokploy self-hosted) app layer. Deploys the Bun+Hono container that
+# serves /api/* and the SPA. Depends on a postgres reachable on dokploy-network
+# — typically the db-tunnel.compose.yml stack, but any pg with the drizzle
+# schema applied works.
+#
+# Expected Dokploy env vars:
+#   DATABASE_URL         — postgresql://user:pw@<postgres-service>:5432/db?sslmode=no-verify
+#   BETTER_AUTH_SECRET   — openssl rand -base64 32 (or reuse the Worker secret)
+#   BETTER_AUTH_URL      — https://<dokploy-domain>
+
+services:
+  app:
+    # Build the image on citadel first with `mise run docker:build` (or
+    # `docker build -t PROJECT_SLUG-app:latest .` from repo root). When deploying
+    # via a git provider / registry in the future, swap this for:
+    #   build: { context: ../.., dockerfile: Dockerfile }
+    # or
+    #   image: ghcr.io/<owner>/PROJECT_SLUG-app:<tag>
+    image: PROJECT_SLUG-app:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      PORT: "3000"
+    expose:
+      - "3000"
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true

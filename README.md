@@ -23,6 +23,15 @@ You'll be asked for:
 
 Post-generation, copier runs `bun install`, `cd web && bun install && bun run build`, and `wrangler types`. Follow the message printed afterwards to create the D1 database and deploy.
 
+## Migration paths
+
+The default rendered project is vanilla Cloudflare + D1. Two tested migration paths off D1 live under `migrations/` and are designed to be handed off to a coding agent:
+
+- [`migrations/01-d1-to-hybrid.md`](migrations/01-d1-to-hybrid.md) — swap D1 for self-hosted Postgres reached by the Worker via Hyperdrive + a Cloudflare Tunnel (Worker stays).
+- [`migrations/02-hybrid-to-dokploy.md`](migrations/02-hybrid-to-dokploy.md) — swap the Worker for a Bun + Hono container on Dokploy serving both `/api/*` and the SPA.
+
+Each playbook ships with drop-in scaffold files in its sibling directory. Proven end-to-end on `knowsuchagency/vpc-test`. See [`migrations/README.md`](migrations/README.md) for framing.
+
 ## Developing this template
 
 The template source lives under `template/`. Files ending in `.jinja` are rendered; everything else is copied verbatim.
