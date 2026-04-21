@@ -223,10 +223,13 @@ fi
 tag=$(cfcurl "$API/accounts/$acct/workers/scripts" | jq -r --arg name "$worker" '.result[] | select(.id==$name) | .tag' | head -1)
 [ -n "$tag" ] || { echo "✗ worker '$worker' not found in account $acct — run 'mise deploy' first" >&2; exit 1; }
 
-gh_uid=$(gh api user --jq '.id')
-gh_uname=$(gh api user --jq '.login')
-gh_rid=$(gh api "repos/$repo_slug" --jq '.id')
-gh_rname="${repo_slug#*/}"
+repo_json=$(gh api "repos/$repo_slug")
+gh_rid=$(printf '%s' "$repo_json" | jq -r '.id')
+gh_rname=$(printf '%s' "$repo_json" | jq -r '.name')
+# provider_account_* must match the repo owner (org or user), not the gh token
+# identity — org-owned repos fail with 8000012 if we send the token user's id.
+gh_uid=$(printf '%s' "$repo_json" | jq -r '.owner.id')
+gh_uname=$(printf '%s' "$repo_json" | jq -r '.owner.login')
 
 echo "• Connecting $repo_slug → $worker..."
 conn_body=$(jq -n --arg pid "$gh_uid" --arg pname "$gh_uname" --arg rid "$gh_rid" --arg rname "$gh_rname" \
