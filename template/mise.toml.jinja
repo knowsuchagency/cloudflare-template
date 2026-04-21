@@ -25,6 +25,13 @@ node = "22"
 # init calls d1:create + secret:put + migrate:remote automatically whenever
 # wrangler is authenticated, so the patched wrangler.jsonc is part of the
 # initial commit pushed to GitHub.
+#
+# After the first deploy, wire Workers Builds so push → deploy works and PRs
+# get preview URLs auto-commented:
+#   mise run builds:connect          # creates repo connection + main + preview triggers (idempotent)
+# One-time prerequisite: the Cloudflare Workers & Pages GitHub App must be
+# authorized on the repo's owner. builds:connect detects this and prints the
+# install link if needed.
 
 [tasks.init]
 description = "Install deps, seed .dev.vars, apply local migrations, provision remote D1 + BETTER_AUTH_SECRET + remote migrations (when authenticated), optionally create a private GitHub repo"
@@ -178,6 +185,99 @@ run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --local"
 [tasks."migrate:remote"]
 description = "Apply migrations to the remote D1"
 run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --remote"
+
+[tasks."builds:connect"]
+description = "Wire Cloudflare Workers Builds to origin's GitHub repo — repo connection + main (deploy) + preview (versions upload) triggers (idempotent)"
+run = '''
+command -v jq >/dev/null 2>&1 || { echo "✗ builds:connect requires jq (https://jqlang.org)" >&2; exit 1; }
+command -v gh >/dev/null 2>&1 || { echo "✗ builds:connect requires the gh CLI (https://cli.github.com)" >&2; exit 1; }
+gh auth status >/dev/null 2>&1 || { echo "✗ gh is not authenticated — run: gh auth login" >&2; exit 1; }
+
+if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+  cfcurl() { curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$@"; }
+elif [ -n "${CLOUDFLARE_API_KEY:-}" ] && [ -n "${CLOUDFLARE_EMAIL:-}" ]; then
+  cfcurl() { curl -sS -H "X-Auth-Email: $CLOUDFLARE_EMAIL" -H "X-Auth-Key: $CLOUDFLARE_API_KEY" "$@"; }
+else
+  echo "✗ builds:connect needs one of:" >&2
+  echo "    CLOUDFLARE_API_TOKEN           (scoped token, preferred — needs Workers Builds Configuration: Edit)" >&2
+  echo "    CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL  (global key fallback)" >&2
+  exit 1
+fi
+
+API=https://api.cloudflare.com/client/v4
+worker="{{ worker_name }}"
+
+origin=$(git remote get-url origin 2>/dev/null || true)
+case "$origin" in
+  *github.com*) ;;
+  *) echo "✗ git remote 'origin' is not a GitHub URL. Run 'mise init --github' first." >&2; exit 1 ;;
+esac
+repo_slug=$(printf '%s' "$origin" | sed -E -e 's#^.*github\.com[/:]##' -e 's#\.git$##')
+
+acct="${CLOUDFLARE_ACCOUNT_ID:-}"
+if [ -z "$acct" ]; then
+  acct=$(cfcurl "$API/accounts" | jq -r '.result[0].id // empty')
+fi
+[ -n "$acct" ] || { echo "✗ could not determine CF account id (set CLOUDFLARE_ACCOUNT_ID)" >&2; exit 1; }
+
+tag=$(cfcurl "$API/accounts/$acct/workers/scripts" | jq -r --arg name "$worker" '.result[] | select(.id==$name) | .tag' | head -1)
+[ -n "$tag" ] || { echo "✗ worker '$worker' not found in account $acct — run 'mise deploy' first" >&2; exit 1; }
+
+gh_uid=$(gh api user --jq '.id')
+gh_uname=$(gh api user --jq '.login')
+gh_rid=$(gh api "repos/$repo_slug" --jq '.id')
+gh_rname="${repo_slug#*/}"
+
+echo "• Connecting $repo_slug → $worker..."
+conn_body=$(jq -n --arg pid "$gh_uid" --arg pname "$gh_uname" --arg rid "$gh_rid" --arg rname "$gh_rname" \
+  '{provider_type:"github", provider_account_id:$pid, provider_account_name:$pname, repo_id:$rid, repo_name:$rname}')
+conn_resp=$(cfcurl -X PUT -H "Content-Type: application/json" "$API/accounts/$acct/builds/repos/connections" -d "$conn_body")
+conn_uuid=$(printf '%s' "$conn_resp" | jq -r '.result.repo_connection_uuid // empty')
+if [ -z "$conn_uuid" ]; then
+  if printf '%s' "$conn_resp" | jq -e '.errors[]? | select((.message // "") | test("authoriz"; "i"))' >/dev/null; then
+    echo "✗ Cloudflare Workers & Pages GitHub App not authorized on your GH account/org." >&2
+    echo "  One-time action: install https://github.com/apps/cloudflare-workers-and-pages on $(printf '%s' "$repo_slug" | cut -d/ -f1)." >&2
+    exit 1
+  fi
+  echo "✗ repo connection failed: $conn_resp" >&2; exit 1
+fi
+echo "  ✓ repo connection $conn_uuid"
+
+tok=$(cfcurl "$API/accounts/$acct/builds/tokens" | jq -r '.result[0].build_token_uuid // empty')
+if [ -z "$tok" ]; then
+  echo "✗ no build tokens on the account. One-time action:" >&2
+  echo "  CF dashboard → Workers & Pages → any Worker → Settings → Builds → API token → create." >&2
+  exit 1
+fi
+
+create_trigger() {
+  local name="$1" build_cmd="$2" deploy_cmd="$3" includes="$4" excludes="$5"
+  local body resp
+  body=$(jq -n --arg tag "$tag" --arg conn "$conn_uuid" --arg tok "$tok" \
+                --arg name "$name" --arg b "$build_cmd" --arg d "$deploy_cmd" \
+                --argjson inc "$includes" --argjson exc "$excludes" \
+    '{external_script_id:$tag, repo_connection_uuid:$conn, build_token_uuid:$tok, trigger_name:$name, build_command:$b, deploy_command:$d, root_directory:"/", branch_includes:$inc, branch_excludes:$exc}')
+  resp=$(cfcurl -X POST -H "Content-Type: application/json" "$API/accounts/$acct/builds/triggers" -d "$body")
+  if printf '%s' "$resp" | jq -e '.success' >/dev/null; then
+    echo "  ✓ $name trigger created"
+  elif printf '%s' "$resp" | jq -e '.errors[]? | select(.code==12042 or .code==12030)' >/dev/null; then
+    # 12042 = duplicate, 12030 = trigger-count limit reached (Workers caps triggers per Worker).
+    # Either means the Worker is already configured — skip.
+    echo "  ✓ $name trigger already configured — skipping"
+  else
+    echo "✗ $name trigger creation failed: $resp" >&2
+    exit 1
+  fi
+}
+
+# `branch_includes: ["*"]` is only accepted alongside a non-empty `branch_excludes`.
+# That's the API shape for "all non-production branches" — it's how the dashboard
+# checkbox is implemented under the hood, not a separate is_production flag.
+create_trigger "main"    "bun run ci:build"         "npx wrangler deploy"          '["main"]' '[]'
+create_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload" '["*"]'    '["main"]'
+
+echo "✓ Workers Builds ready — push to 'main' deploys; push to any other branch produces a preview URL commented on the PR."
+'''
 
 [tasks."ci:local"]
 description = "Local mirror of `bun run ci:build`: install deps, build SPA, apply local D1 migrations (no deploy)"

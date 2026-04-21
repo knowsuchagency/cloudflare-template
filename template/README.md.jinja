@@ -69,13 +69,30 @@ On the first deploy, `mise deploy` captures the `*.workers.dev` URL that wrangle
 
 ### Ongoing — push to deploy
 
-Once the repo lives on GitHub (`mise init --github` does this in one shot), wire [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) so every push to `main` redeploys automatically **and** applies any pending D1 migrations:
+Once the repo lives on GitHub (`mise init --github` does this in one shot), wire [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/):
 
-1. CF dashboard → Workers & Pages → `{{ worker_name }}` → **Settings → Builds → Connect**.
-2. Authorize the Cloudflare GitHub App for your repo and pick the `main` branch.
-3. Set the **Build command** to `bun run ci:build` (installs deps, builds the SPA, runs `wrangler d1 migrations apply --remote`).
-4. Leave the **Deploy command** at the default (`npx wrangler deploy`).
+```bash
+mise run builds:connect
+```
 
-After this, you don't need to run `mise run migrate:remote` manually before pushing — it's on the CI critical path. `mise deploy` remains as the local escape hatch. Migrations run before the Worker swaps in, so keep schema changes forward-compatible with the currently-deployed Worker (destructive drops = two pushes).
+That task calls the Cloudflare API to attach the repo to `{{ worker_name }}` and creates two triggers:
+
+- **`main`** → `bun run ci:build` → `wrangler deploy` (installs deps, builds the SPA, applies remote D1 migrations, deploys production)
+- **`preview`** (all other branches) → `bun run ci:build:preview` → `wrangler versions upload` (same build minus migrations, producing a preview-only version)
+
+`builds:connect` is idempotent — re-runs are no-ops. It needs `CLOUDFLARE_API_TOKEN` (or `CLOUDFLARE_API_KEY` + `CLOUDFLARE_EMAIL`) in the environment and an authenticated `gh`.
+
+**One-time prerequisite.** The [Cloudflare Workers & Pages GitHub App](https://github.com/apps/cloudflare-workers-and-pages) must be installed on the repo's owner (user or org). If it isn't, `builds:connect` prints the install link and exits. You do this once per GH account/org, ever.
+
+**What you get.** `preview_urls: true` in `wrangler.jsonc` (already set) means every version gets two stable URLs:
+
+- `https://<version-id>-{{ worker_name }}.<subdomain>.workers.dev` — pinned to that commit
+- `https://<branch>-{{ worker_name }}.<subdomain>.workers.dev` — follows the branch
+
+When a PR is open, Workers Builds comments both URLs on it automatically.
+
+**Preview builds skip `db:migrate:remote` on purpose** — in-flight PR migrations don't land in the shared production D1. Preview branches run against the *current* schema, so features depending on a new column won't fully work in preview until the PR merges and `main` deploys. Keep schema changes forward-compatible with the deployed Worker either way (destructive drops = two pushes).
+
+`mise run migrate:remote` and `mise deploy` both remain as local escape hatches.
 
 See `CLAUDE.md` for the full architecture, schema-generation flow, and auth-specific gotchas.
