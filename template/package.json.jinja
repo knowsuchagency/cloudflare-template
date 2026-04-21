@@ -11,7 +11,8 @@
     "auth:generate": "better-auth generate --config ./better-auth.config.ts --output ./src/db/schema.ts -y",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply {{ d1_database_name }} --local",
-    "db:migrate:remote": "wrangler d1 migrations apply {{ d1_database_name }} --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply {{ d1_database_name }} --remote",
+    "ci:build": "bun install && bun install --cwd web && cd web && bun run build && cd .. && bun run db:migrate:remote"
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",

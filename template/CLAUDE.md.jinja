@@ -59,18 +59,25 @@ The schema is **generated, not hand-written**. When adding a better-auth plugin 
 mise run auth:generate    # regenerates src/db/schema.ts from better-auth.config.ts
 mise run db:generate      # drizzle-kit turns schema.ts into drizzle/NNNN_*.sql
 mise run migrate:local    # wrangler d1 migrations apply --local
-mise run migrate:remote   # wrangler d1 migrations apply --remote
 ```
+
+Remote D1 migrations apply automatically on push when Workers Builds is connected (see the Deploy section) — `bun run ci:build` runs `db:migrate:remote` before `wrangler deploy`. `mise run migrate:remote` / `bun run db:migrate:remote` remain available as an escape hatch for out-of-band fixes or if you're deploying locally via `mise deploy`.
+
+Ordering inside `ci:build`: install deps → build SPA → apply D1 migrations → (Workers Builds then runs `wrangler deploy`). D1 lands before the Worker, so migrations must stay forward-compatible with the currently-deployed Worker — destructive schema changes require two pushes (first push: code tolerating both schemas; second push: the drop).
 
 `better-auth.config.ts` uses an in-memory `better-sqlite3` DB because the CLI doesn't need a real connection to emit drizzle table definitions — only the adapter shape.
 
 ## Deploy
 
+Two paths. **Local ad-hoc:**
+
 ```bash
 mise deploy
 ```
 
-`mise init` already uploaded `BETTER_AUTH_SECRET` and applied remote migrations. `mise run secret:put` (idempotent) rotates the secret, and `mise run migrate:remote` applies new migrations after `mise run db:generate`.
+**Push to deploy (recommended once the project is on GitHub):** connect [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) to the repo once in the CF dashboard (Workers & Pages → {{ worker_name }} → Settings → Builds → Connect), set the **Build command** to `bun run ci:build`, and leave the Deploy command at the default (`npx wrangler deploy`). Every push to `main` then installs deps, builds the SPA, applies remote D1 migrations, and redeploys.
+
+`mise init` already uploaded `BETTER_AUTH_SECRET` and applied remote migrations. `mise run secret:put` (idempotent) rotates the secret.
 
 `mise deploy` auto-patches `vars.BETTER_AUTH_URL` in `wrangler.jsonc` from the `*.workers.dev` URL that wrangler prints on the first deploy, then redeploys once so the Worker's origin matches the URL better-auth uses for redirects and cookies. Override it manually beforehand if you're fronting with a custom domain.
 

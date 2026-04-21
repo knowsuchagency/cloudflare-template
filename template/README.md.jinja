@@ -57,12 +57,25 @@ Run `mise tasks` for the full list. Highlights:
 
 ## Deploy
 
+### First deploy — local
+
 ```bash
 mise deploy
 ```
 
 On the first deploy, `mise deploy` captures the `*.workers.dev` URL that wrangler prints, patches `vars.BETTER_AUTH_URL` in `wrangler.jsonc`, and redeploys once so Better Auth sees a matching origin. For a custom domain, edit `vars.BETTER_AUTH_URL` yourself before the first deploy and the auto-patch stays out of the way.
 
-`mise init` already uploaded `BETTER_AUTH_SECRET` and applied remote migrations. Use `mise run secret:put` to rotate the secret (skips when already set — delete it in the dashboard first to force a new one) and `mise run migrate:remote` after adding new migrations.
+`mise init` already uploaded `BETTER_AUTH_SECRET` and applied remote migrations. Use `mise run secret:put` to rotate the secret (skips when already set — delete it in the dashboard first to force a new one).
+
+### Ongoing — push to deploy
+
+Once the repo lives on GitHub (`mise init --github` does this in one shot), wire [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) so every push to `main` redeploys automatically **and** applies any pending D1 migrations:
+
+1. CF dashboard → Workers & Pages → `{{ worker_name }}` → **Settings → Builds → Connect**.
+2. Authorize the Cloudflare GitHub App for your repo and pick the `main` branch.
+3. Set the **Build command** to `bun run ci:build` (installs deps, builds the SPA, runs `wrangler d1 migrations apply --remote`).
+4. Leave the **Deploy command** at the default (`npx wrangler deploy`).
+
+After this, you don't need to run `mise run migrate:remote` manually before pushing — it's on the CI critical path. `mise deploy` remains as the local escape hatch. Migrations run before the Worker swaps in, so keep schema changes forward-compatible with the currently-deployed Worker (destructive drops = two pushes).
 
 See `CLAUDE.md` for the full architecture, schema-generation flow, and auth-specific gotchas.
