@@ -179,6 +179,15 @@ run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --local"
 description = "Apply migrations to the remote D1"
 run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --remote"
 
+[tasks."ci:local"]
+description = "Local mirror of `bun run ci:build`: install deps, build SPA, apply local D1 migrations (no deploy)"
+run = [
+  "bun install",
+  "bun install --cwd web",
+  "cd web && bun run build",
+  "bun run db:migrate:local",
+]
+
 [tasks."secret:put"]
 description = "Ensure BETTER_AUTH_SECRET is set on the remote Worker (idempotent — skips if already present)"
 run = '''
