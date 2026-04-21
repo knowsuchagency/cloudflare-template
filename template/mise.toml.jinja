@@ -250,22 +250,64 @@ if [ -z "$tok" ]; then
   exit 1
 fi
 
-create_trigger() {
+# List live triggers once so upsert_trigger can diff against declared intent.
+existing=$(cfcurl "$API/accounts/$acct/builds/workers/$tag/triggers")
+if ! printf '%s' "$existing" | jq -e '.success' >/dev/null; then
+  echo "✗ could not list existing triggers: $existing" >&2
+  exit 1
+fi
+
+upsert_trigger() {
   local name="$1" build_cmd="$2" deploy_cmd="$3" includes="$4" excludes="$5"
-  local body resp
-  body=$(jq -n --arg tag "$tag" --arg conn "$conn_uuid" --arg tok "$tok" \
-                --arg name "$name" --arg b "$build_cmd" --arg d "$deploy_cmd" \
-                --argjson inc "$includes" --argjson exc "$excludes" \
-    '{external_script_id:$tag, repo_connection_uuid:$conn, build_token_uuid:$tok, trigger_name:$name, build_command:$b, deploy_command:$d, root_directory:"/", branch_includes:$inc, branch_excludes:$exc}')
-  resp=$(cfcurl -X POST -H "Content-Type: application/json" "$API/accounts/$acct/builds/triggers" -d "$body")
+  local match existing_uuid body resp got_b got_d got_inc got_exc want_inc want_exc
+
+  match=$(printf '%s' "$existing" | jq --arg name "$name" \
+    '.result[] | select(.deleted_on==null and .trigger_name==$name) | {uuid:.trigger_uuid, build_command, deploy_command, branch_includes, branch_excludes}')
+  existing_uuid=$(printf '%s' "$match" | jq -r '.uuid // empty')
+
+  if [ -z "$existing_uuid" ]; then
+    body=$(jq -n --arg tag "$tag" --arg conn "$conn_uuid" --arg tok "$tok" \
+                 --arg name "$name" --arg b "$build_cmd" --arg d "$deploy_cmd" \
+                 --argjson inc "$includes" --argjson exc "$excludes" \
+      '{external_script_id:$tag, repo_connection_uuid:$conn, build_token_uuid:$tok, trigger_name:$name, build_command:$b, deploy_command:$d, root_directory:"/", branch_includes:$inc, branch_excludes:$exc}')
+    resp=$(cfcurl -X POST -H "Content-Type: application/json" "$API/accounts/$acct/builds/triggers" -d "$body")
+    if printf '%s' "$resp" | jq -e '.success' >/dev/null; then
+      echo "  ✓ $name trigger created"
+    elif printf '%s' "$resp" | jq -e '.errors[]? | select(.code==12030)' >/dev/null; then
+      # 12030 = per-worker trigger count limit hit. Most likely cause: triggers
+      # created through the dashboard under different names (e.g. "Deploy default
+      # branch"). List them so the user can clean up and re-run.
+      echo "  ⚠ $name trigger not created — per-worker trigger limit reached." >&2
+      echo "    Existing triggers for this worker (delete the stale ones and re-run):" >&2
+      printf '%s' "$existing" | jq -r '.result[] | select(.deleted_on==null) | "      • " + .trigger_name + "  [" + .trigger_uuid + "]  build=" + .build_command' >&2
+      exit 1
+    else
+      echo "✗ $name trigger creation failed: $resp" >&2
+      exit 1
+    fi
+    return
+  fi
+
+  want_inc=$(printf '%s' "$includes" | jq -c '.')
+  want_exc=$(printf '%s' "$excludes" | jq -c '.')
+  got_b=$(printf '%s' "$match" | jq -r '.build_command')
+  got_d=$(printf '%s' "$match" | jq -r '.deploy_command')
+  got_inc=$(printf '%s' "$match" | jq -c '.branch_includes')
+  got_exc=$(printf '%s' "$match" | jq -c '.branch_excludes')
+
+  if [ "$got_b" = "$build_cmd" ] && [ "$got_d" = "$deploy_cmd" ] && [ "$got_inc" = "$want_inc" ] && [ "$got_exc" = "$want_exc" ]; then
+    echo "  ✓ $name trigger already matches — skipping"
+    return
+  fi
+
+  body=$(jq -n --arg b "$build_cmd" --arg d "$deploy_cmd" \
+               --argjson inc "$includes" --argjson exc "$excludes" \
+    '{build_command:$b, deploy_command:$d, branch_includes:$inc, branch_excludes:$exc}')
+  resp=$(cfcurl -X PATCH -H "Content-Type: application/json" "$API/accounts/$acct/builds/triggers/$existing_uuid" -d "$body")
   if printf '%s' "$resp" | jq -e '.success' >/dev/null; then
-    echo "  ✓ $name trigger created"
-  elif printf '%s' "$resp" | jq -e '.errors[]? | select(.code==12042 or .code==12030)' >/dev/null; then
-    # 12042 = duplicate, 12030 = trigger-count limit reached (Workers caps triggers per Worker).
-    # Either means the Worker is already configured — skip.
-    echo "  ✓ $name trigger already configured — skipping"
+    echo "  ✓ $name trigger updated"
   else
-    echo "✗ $name trigger creation failed: $resp" >&2
+    echo "✗ $name trigger update failed: $resp" >&2
     exit 1
   fi
 }
@@ -273,8 +315,8 @@ create_trigger() {
 # `branch_includes: ["*"]` is only accepted alongside a non-empty `branch_excludes`.
 # That's the API shape for "all non-production branches" — it's how the dashboard
 # checkbox is implemented under the hood, not a separate is_production flag.
-create_trigger "main"    "bun run ci:build"         "npx wrangler deploy"          '["main"]' '[]'
-create_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload" '["*"]'    '["main"]'
+upsert_trigger "main"    "bun run ci:build"         "npx wrangler deploy"          '["main"]' '[]'
+upsert_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload" '["*"]'    '["main"]'
 
 echo "✓ Workers Builds ready — push to 'main' deploys; push to any other branch produces a preview URL commented on the PR."
 '''
