@@ -99,6 +99,8 @@ One-time prerequisite: install the [Cloudflare Workers & Pages GitHub App](https
 
 Workers Builds auto-comments both on the PR.
 
+**Durable Objects fallback.** Cloudflare disables those preview URLs whenever the Worker has a DO binding (DO state is global per-Worker; there's no per-version partitioning). `.github/workflows/preview.yml` covers the gap: if it sees `durable_objects.bindings` in `wrangler.jsonc`, it deploys a per-PR Worker named `{{ worker_name }}-pr-<n>` and sticky-comments the URL on the PR. Each PR's Worker is its own DO namespace by construction, so PRs can't trample each other's state. The preview shares the production D1 (same `database_id`) and skips migrations — same trade-off as the Workers Builds preview path. Without DOs the workflow no-ops so it doesn't clobber Workers Builds. `.github/workflows/preview-cleanup.yml` deletes the preview Worker on PR close. Required repo secrets: `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit + D1: Edit) **or** `CLOUDFLARE_API_KEY` + `CLOUDFLARE_EMAIL` (global key fallback), plus `CLOUDFLARE_ACCOUNT_ID`.
+
 `mise init` already uploaded `BETTER_AUTH_SECRET` and applied remote migrations. `mise run secret:put` (idempotent) rotates the secret.
 
 `mise deploy` auto-patches `vars.BETTER_AUTH_URL` in `wrangler.jsonc` from the `*.workers.dev` URL that wrangler prints on the first deploy, then redeploys once so the Worker's origin matches the URL better-auth uses for redirects and cookies. Override it manually beforehand if you're fronting with a custom domain.

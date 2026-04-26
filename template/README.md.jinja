@@ -91,6 +91,8 @@ That task calls the Cloudflare API to attach the repo to `{{ worker_name }}` and
 
 When a PR is open, Workers Builds comments both URLs on it automatically.
 
+**Durable Objects fallback.** Workers Builds disables those preview URLs whenever the Worker has a DO binding. The repo ships `.github/workflows/preview.yml` to cover that case: when `wrangler.jsonc` declares `durable_objects.bindings`, each PR commit deploys to a Worker named `{{ worker_name }}-pr-<n>` and the URL is sticky-commented on the PR (`preview-cleanup.yml` deletes it on close). Without DOs the workflow no-ops. Set `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit + D1: Edit) — or `CLOUDFLARE_API_KEY` + `CLOUDFLARE_EMAIL` as a global-key fallback — plus `CLOUDFLARE_ACCOUNT_ID` in repo secrets to enable it.
+
 **Preview builds skip `db:migrate:remote` on purpose** — in-flight PR migrations don't land in the shared production D1. Preview branches run against the *current* schema, so features depending on a new column won't fully work in preview until the PR merges and `main` deploys. Keep schema changes forward-compatible with the deployed Worker either way (destructive drops = two pushes).
 
 `mise run migrate:remote` and `mise deploy` both remain as local escape hatches.

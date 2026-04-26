@@ -1,0 +1,145 @@
+# PR preview deploys for projects that use Durable Objects.
+#
+# Cloudflare Workers Builds auto-comments preview URLs on PRs, but disables
+# them whenever the Worker has DO bindings (DO state is global per-Worker and
+# can't be partitioned per version). This workflow fills that gap: when
+# wrangler.jsonc declares a DO binding, each PR gets its own Worker named
+# `<worker_name>-pr-<pr_number>` with naturally isolated DO state.
+#
+# When the project does not use DOs, the deploy job is skipped so Workers
+# Builds' native preview URLs remain the source of truth.
+#
+# Required repo secrets — one of:
+#   CLOUDFLARE_API_TOKEN                          (scoped token, preferred:
+#                                                  Workers Scripts: Edit + D1: Edit)
+#   CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL         (Global API Key fallback)
+# Plus:
+#   CLOUDFLARE_ACCOUNT_ID
+
+name: PR preview (Durable Objects fallback)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      has_do: ${{ steps.parse.outputs.has_do }}
+      worker_name: ${{ steps.parse.outputs.worker_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - id: parse
+        run: |
+          node -e '
+            const fs = require("fs");
+            const raw = fs.readFileSync("wrangler.jsonc", "utf8")
+              .replace(/\/\*[\s\S]*?\*\//g, "")
+              .replace(/(^|[^:])\/\/.*$/gm, "$1");
+            const cfg = JSON.parse(raw);
+            const hasDo = (cfg.durable_objects?.bindings?.length ?? 0) > 0;
+            const out = process.env.GITHUB_OUTPUT;
+            fs.appendFileSync(out, `has_do=${hasDo}\n`);
+            fs.appendFileSync(out, `worker_name=${cfg.name}\n`);
+          '
+          cat "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: detect
+    if: >-
+      needs.detect.outputs.has_do == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+      CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WORKER_NAME: ${{ needs.detect.outputs.worker_name }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.3
+
+      - name: Build (no migrations — preview shares production D1)
+        run: bun run ci:build:preview
+
+      - name: Deploy preview Worker and capture URL
+        id: deploy
+        run: |
+          set -euo pipefail
+          PREVIEW_NAME="${WORKER_NAME}-pr-${PR_NUMBER}"
+          echo "Deploying $PREVIEW_NAME ..."
+
+          # First deploy creates the Worker (so we can attach secrets to it)
+          # and prints the canonical *.workers.dev URL.
+          deploy_out=$(bunx wrangler deploy --name "$PREVIEW_NAME" 2>&1)
+          printf '%s\n' "$deploy_out"
+
+          url=$(printf '%s' "$deploy_out" \
+            | grep -oE "https://${PREVIEW_NAME}\.[a-z0-9-]+\.workers\.dev" \
+            | head -1)
+
+          if [ -z "$url" ]; then
+            echo "::error::Could not extract preview URL from wrangler output" >&2
+            exit 1
+          fi
+
+          # Mint a per-preview BETTER_AUTH_SECRET on first deploy. wrangler
+          # secret list returns non-zero if the secret isn't set yet, so we
+          # only put it once per preview Worker.
+          if ! bunx wrangler secret list --name "$PREVIEW_NAME" 2>/dev/null \
+              | grep -q '"BETTER_AUTH_SECRET"'; then
+            openssl rand -base64 32 \
+              | bunx wrangler secret put BETTER_AUTH_SECRET --name "$PREVIEW_NAME"
+          fi
+
+          # Redeploy with BETTER_AUTH_URL set so Better Auth issues redirects
+          # and cookies against the real preview origin.
+          bunx wrangler deploy --name "$PREVIEW_NAME" --var BETTER_AUTH_URL:"$url"
+
+          {
+            echo "preview_name=$PREVIEW_NAME"
+            echo "url=$url"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing preview comment
+        uses: peter-evans/find-comment@v3
+        id: find_comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: <!-- preview-deploy-marker -->
+
+      - name: Upsert preview URL comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- preview-deploy-marker -->
+            **Preview deployed** (Durable Objects fallback)
+
+            - URL: ${{ steps.deploy.outputs.url }}
+            - Worker: `${{ steps.deploy.outputs.preview_name }}`
+            - Commit: ${{ github.event.pull_request.head.sha }}
+
+            Each PR gets its own Worker (so its own DO namespace). The preview shares the production D1; PR migrations are skipped — keep schema changes forward-compatible until merge.
