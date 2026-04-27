@@ -111,6 +111,58 @@ if [ "${usage_github:-false}" = "true" ]; then
 fi
 '''
 
+[tasks."worktree-init"]
+description = "Spin up a fresh worktree for local dev: install deps, seed .dev.vars, reset+migrate local D1, and pull prod data via read-only export (no remote writes)"
+run = '''
+set -e
+
+bunx wrangler whoami >/dev/null 2>&1 || {
+  echo "✗ wrangler is not authenticated — run: bunx wrangler login" >&2
+  echo "  (or export CLOUDFLARE_API_TOKEN, e.g. via: fnox exec -- mise run worktree-init)" >&2
+  exit 1
+}
+
+bun install
+bun install --cwd web
+
+if [ -f .dev.vars ]; then
+  echo "• .dev.vars already exists — leaving it alone"
+else
+  {
+    echo "BETTER_AUTH_URL=http://localhost:8787"
+    printf 'BETTER_AUTH_SECRET=%s\n' "$(openssl rand -base64 32)"
+  } > .dev.vars
+  echo "✓ created .dev.vars"
+fi
+
+# Wipe local D1 so re-running this task is idempotent (no PK conflicts on re-import).
+# Destructive only against the local miniflare SQLite file — never touches remote.
+rm -rf .wrangler/state/v3/d1
+echo "✓ wiped local D1 state"
+
+mise run migrate:local
+
+# Pull prod data via read-only export. --no-schema skips DDL (migrations above
+# created it). If the project adds FTS or other virtual tables, narrow this
+# with `--table=<name>` flags so the local triggers — not the export's
+# shadow-table INSERTs — populate the FTS index.
+out=$(mktemp -t {{ project_slug }}-prod-data.XXXXXX.sql)
+trap 'rm -f "$out"' EXIT
+
+bunx wrangler d1 export {{ d1_database_name }} --remote --no-schema --output="$out"
+
+# Apply via sqlite3 CLI rather than `wrangler d1 execute --local` because
+# wrangler enforces D1's ~1MB per-statement limit even locally, and large
+# row payloads (e.g. blobs, long text columns) can blow past it
+# (SQLITE_TOOBIG). The miniflare SQLite file has no such cap.
+command -v sqlite3 >/dev/null 2>&1 || { echo "✗ worktree-init requires the sqlite3 CLI" >&2; exit 1; }
+sqlite_file=$(find .wrangler/state/v3/d1/miniflare-D1DatabaseObject -maxdepth 1 -name '*.sqlite' ! -name 'metadata.sqlite' -print -quit)
+[ -n "$sqlite_file" ] || { echo "✗ could not locate local D1 SQLite file under .wrangler/state/v3/d1" >&2; exit 1; }
+sqlite3 "$sqlite_file" ".read $out"
+
+echo "✓ local D1 populated from prod data — run: mise run dev"
+'''
+
 [tasks."web:build"]
 description = "Build the Vite SPA into web/dist"
 dir = "web"
@@ -119,9 +171,18 @@ sources = ["src/**/*", "index.html", "vite.config.ts", "package.json", "tsconfig
 outputs = ["dist/**/*"]
 
 [tasks.dev]
-description = "Run the Worker locally (builds SPA first)"
+description = "Run the Worker locally with SPA hot-reload (vite build --watch + wrangler dev)"
 depends = ["web:build"]
-run = "bunx wrangler dev"
+run = '''
+# Two long-running processes in parallel. Vite's watch mode rebuilds
+# web/dist on SPA source changes; wrangler dev hot-reloads the Worker on
+# src/** changes. The trap kills the background watcher when wrangler
+# exits (Ctrl+C, crash) so we don't leak processes between sessions.
+( cd web && bunx vite build --watch ) &
+watch_pid=$!
+trap 'kill $watch_pid 2>/dev/null; exit' EXIT INT TERM
+bunx wrangler dev
+'''
 
 [tasks.typecheck]
 description = "Typecheck Worker + web"

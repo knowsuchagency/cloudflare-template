@@ -51,6 +51,15 @@ mise run web:build        # SPA only; mise caches based on sources
 mise run deploy           # web:build -> wrangler deploy
 ```
 
+For a fresh worktree (e.g. fulcrum task branch) where you want production-like data without touching remote resources:
+
+```bash
+mise run worktree-init    # deps + .dev.vars + wipe & re-migrate local D1 +
+                          # pull prod data via read-only `wrangler d1 export --remote`
+```
+
+The export goes through D1's R2-staged export endpoint and is applied locally via the `sqlite3` CLI (bypasses wrangler's ~1MB per-statement limit on local execute). If the project adds FTS or other virtual tables, narrow `wrangler d1 export` with `--table=<name>` flags so local triggers — not exported shadow-table INSERTs — populate the index.
+
 ## Schema & migration flow
 
 The schema is **generated, not hand-written**. When adding a better-auth plugin or changing `src/lib/better-auth/options.ts`:
@@ -105,7 +114,7 @@ Workers Builds auto-comments both on the PR.
 
 `mise deploy` auto-patches `vars.BETTER_AUTH_URL` in `wrangler.jsonc` from the `*.workers.dev` URL that wrangler prints on the first deploy, then redeploys once so the Worker's origin matches the URL better-auth uses for redirects and cookies. Override it manually beforehand if you're fronting with a custom domain.
 
-The Worker serves `web/dist`, so SPA edits aren't visible until `mise run web:build` (which `mise run dev`/`mise run deploy` do automatically). For live SPA iteration, `cd web && bun run dev` starts the Vite dev server on :5173; point it at `http://localhost:8787/api/*` via a proxy.
+The Worker serves `web/dist`, so SPA edits need a rebuild before they're visible. `mise run dev` handles this automatically: it does an initial `web:build`, then runs `vite build --watch` in the background alongside `wrangler dev`, so SPA source changes incrementally rebuild `web/dist` and the next page reload picks them up. The watcher is process-grouped via `trap` so Ctrl+C cleans both halves up.
 
 ## Auth-specific gotchas
 
@@ -113,3 +122,4 @@ The Worker serves `web/dist`, so SPA edits aren't visible until `mise run web:bu
 - `options.ts` sets `advanced.ipAddress.ipAddressHeaders: ["cf-connecting-ip"]` — without this better-auth logs rate-limiter warnings on Workers.
 - `auth-client.ts` POSTs `body: "{}"` on sign-out because better-auth parses the body as JSON and crashes on an empty stream.
 - The auth handler expects `basePath: "/api/auth"` matching the Hono route mount.
+- Better Auth's CSRF check ("Invalid origin") rejects any request whose Origin doesn't match `BETTER_AUTH_URL` or an entry in `trustedOrigins`. `src/lib/better-auth/index.ts` builds that list with two layers: it auto-derives `https://*.<sub>.workers.dev` whenever `BETTER_AUTH_URL` itself is on workers.dev (so Workers Builds preview URLs work zero-config), and it merges in any extras from the comma-separated `BETTER_AUTH_TRUSTED_ORIGINS` env var. Set that var in `wrangler.jsonc` `vars` for custom-domain prod (covering workers.dev preview URLs the auto-derive can't see), or in `.dev.vars` for local dev when you hit the Worker via a hostname that doesn't match `BETTER_AUTH_URL` (a `/etc/hosts` entry, reverse proxy, alternate port). Prefer adding the alternate origin to `BETTER_AUTH_TRUSTED_ORIGINS` over editing `BETTER_AUTH_URL` so cookies stay on the canonical origin.
