@@ -114,7 +114,9 @@ Workers Builds auto-comments both on the PR.
 
 `mise deploy` auto-patches `vars.BETTER_AUTH_URL` in `wrangler.jsonc` from the `*.workers.dev` URL that wrangler prints on the first deploy, then redeploys once so the Worker's origin matches the URL better-auth uses for redirects and cookies. Override it manually beforehand if you're fronting with a custom domain.
 
-The Worker serves `web/dist`, so SPA edits need a rebuild before they're visible. `mise run dev` handles this automatically: it does an initial `web:build`, then runs `vite build --watch` in the background alongside `wrangler dev`, so SPA source changes incrementally rebuild `web/dist` and the next page reload picks them up. The watcher is process-grouped via `trap` so Ctrl+C cleans both halves up.
+`mise run dev` runs Vite's dev server (with HMR) on :5173 and `wrangler dev` (Worker) on :8787 in parallel. Browse to `http://localhost:5173` — Vite's `server.proxy` in `web/vite.config.ts` forwards `/api` (and any other top-level paths the Worker is mounted on per `wrangler.jsonc` `run_worker_first`) to wrangler so the SPA sees a single origin. SPA source edits hot-reload in-place; Worker `src/**` edits trigger wrangler reload. The trap kills the background vite when wrangler exits (Ctrl+C, crash). Note: `BETTER_AUTH_URL` in `.dev.vars` must be `http://localhost:5173` for cookies / CSRF to line up — `mise init` and `mise run worktree-init` seed that.
+
+`mise run web:build` + `mise run deploy` produce a real production bundle of the SPA into `web/dist` (which the Worker's `assets` binding serves at deploy time). For deployed environments only — the dev server doesn't read `web/dist`.
 
 ## Auth-specific gotchas
 
