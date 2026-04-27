@@ -55,11 +55,14 @@ mise run update-from-template  # `copier update` against the parent template
 For a fresh worktree (e.g. fulcrum task branch) where you want production-like data without touching remote resources:
 
 ```bash
+mise trust                # one-time per worktree path — mise refuses to load
+                          # mise.toml from an untrusted path (the parent
+                          # repo's trust doesn't transfer to a new worktree)
 mise run worktree-init    # deps + .dev.vars + wipe & re-migrate local D1 +
                           # pull prod data via read-only `wrangler d1 export --remote`
 ```
 
-The export goes through D1's R2-staged export endpoint and is applied locally via the `sqlite3` CLI (bypasses wrangler's ~1MB per-statement limit on local execute). If the project adds FTS or other virtual tables, narrow `wrangler d1 export` with `--table=<name>` flags so local triggers — not exported shadow-table INSERTs — populate the index.
+The export goes through D1's R2-staged export endpoint and is applied locally via the `sqlite3` CLI (bypasses wrangler's ~1MB per-statement limit on local execute). The script strips `d1_migrations` and `sqlite_sequence` rows from the export before applying — those are wrangler's internal bookkeeping that `migrate:local` has already populated, so re-importing them would collide on PRIMARY KEY. If the project adds FTS or other virtual tables, narrow `wrangler d1 export` with `--table=<name>` flags so local triggers — not exported shadow-table INSERTs — populate the index.
 
 ## Schema & migration flow
 
@@ -118,6 +121,29 @@ Workers Builds auto-comments both on the PR.
 `mise run dev` runs Vite's dev server (with HMR) on :5173 and `wrangler dev` (Worker) on :8787 in parallel. Browse to `http://localhost:5173` — Vite's `server.proxy` in `web/vite.config.ts` forwards `/api` (and any other top-level paths the Worker is mounted on per `wrangler.jsonc` `run_worker_first`) to wrangler so the SPA sees a single origin. SPA source edits hot-reload in-place; Worker `src/**` edits trigger wrangler reload. The trap kills the background vite when wrangler exits (Ctrl+C, crash). Note: `BETTER_AUTH_URL` in `.dev.vars` must be `http://localhost:5173` for cookies / CSRF to line up — `mise init` and `mise run worktree-init` seed that.
 
 `mise run web:build` + `mise run deploy` produce a real production bundle of the SPA into `web/dist` (which the Worker's `assets` binding serves at deploy time). For deployed environments only — the dev server doesn't read `web/dist`.
+
+## Observability
+
+**Workers Logs: 100% by default, no head sampling.** `wrangler.jsonc` only enables `observability` (no `head_sampling_rate`), so every request produces a trace event. Pricing: 20M logs/month included on Workers Paid, then $0.60/M. There's a built-in safety valve — *if you ever blow past the daily portion of the monthly quota, Cloudflare auto-applies a 1% head sample for the rest of that day*, so a runaway log spike costs visibility, not money. To opt into per-Worker sampling on purpose (e.g. once you're at 100M+ req/mo), add `"head_sampling_rate": 0.X` under `observability` in `wrangler.jsonc`. Local `wrangler dev` is naturally exempt either way — its logs go to stdout, not Workers Logs.
+
+**D1 read replication (mode=auto), enabled by default.** `mise run d1:replicate` (auto-run by `mise init`) PUTs `read_replication.mode = "auto"` on the prod database via the D1 API. Replication is free; it doesn't show up in `wrangler.jsonc` because it's a database-level setting, not a binding setting. Code keeps using `env.DB` against the primary by default — to actually serve reads from a replica, opt in per query by switching to the [Sessions API](https://developers.cloudflare.com/d1/best-practices/read-replication/):
+
+```ts
+const session = env.DB.withSession("first-unconstrained");
+const rows = await session.prepare("SELECT * FROM user").all();
+// session.getBookmark() — pin subsequent reads to the same point in time
+```
+
+`mise run worktree-init` pulls prod data into the local D1 via `wrangler d1 export --remote`; replication is enabled regardless so app-side reads benefit immediately.
+
+**Logpush → R2: opt-in via `mise run logpush:setup`.** `wrangler.jsonc` sets `logpush: true` so the Worker is logpush-eligible, but no R2 bucket or Logpush job is created automatically. Run `mise run logpush:setup` when one of these reasons applies:
+
+- **Retention beyond 7 days.** Workers Logs holds 7 days. R2 is forever — incident postmortems / billing reconciliation older than a week need it.
+- **Compliance / SIEM ingestion.** Audits typically require logs out of the vendor dashboard, in S3-compatible storage you control.
+- **Off-vendor analytics.** Querying with DuckDB / BigQuery / Athena over the gzipped NDJSON in R2, instead of the dashboard query UI.
+- **Disaster recovery.** Your data, your bucket; survives a CF account incident or a future migration off the platform.
+
+The task creates `{{ project_slug }}-logs` R2 bucket, mints an S3-compatible R2 access key (cached in `.cf-logpush-r2-creds.json`, gitignored), and creates a Logpush job that ships `workers_trace_events` to `r2://{{ project_slug }}-logs/{DATE}/...`. *Empirically verified*: Logpush is downstream of `head_sampling_rate` — sampled-out requests don't produce trace events for either Workers Logs or Logpush. With no head sampling (the default), R2 sees the full firehose. Rotate the R2 access key by deleting the `logpush-r2-{{ worker_name }}` token in the dashboard and removing `.cf-logpush-r2-creds.json`; the next `mise run logpush:setup` mints a fresh one.
 
 ## Auth-specific gotchas
 

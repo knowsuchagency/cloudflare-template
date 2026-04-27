@@ -92,8 +92,13 @@ if bunx wrangler whoami >/dev/null 2>&1; then
   mise run d1:create
   mise run secret:put
   mise run migrate:remote
+  mise run d1:replicate
+  # `mise run logpush:setup` is intentionally NOT auto-run — it's opt-in.
+  # The Worker is already logpush-eligible (`logpush: true` in wrangler.jsonc),
+  # so you can wire up a Logpush job to R2 whenever you actually need
+  # long-term archival, off-vendor analytics, or compliance retention.
 else
-  echo "ℹ Skipping remote bootstrap — run \`bunx wrangler login\` (or re-run init with --headless), then \`mise run d1:create && mise run secret:put && mise run migrate:remote\`"
+  echo "ℹ Skipping remote bootstrap — run \`bunx wrangler login\` (or re-run init with --headless), then \`mise run d1:create && mise run secret:put && mise run migrate:remote && mise run d1:replicate\`"
 fi
 
 if [ "${usage_github:-false}" = "true" ]; then
@@ -150,6 +155,12 @@ out=$(mktemp -t {{ project_slug }}-prod-data.XXXXXX.sql)
 trap 'rm -f "$out"' EXIT
 
 bunx wrangler d1 export {{ d1_database_name }} --remote --no-schema --output="$out"
+
+# Strip rows from D1's internal metadata tables. `migrate:local` above already
+# inserted a row in d1_migrations (and bumped sqlite_sequence) for the same
+# migrations prod has, so re-importing them collides on the PRIMARY KEY.
+# These tables are wrangler's bookkeeping, not app data.
+sed -i.bak -E '/^INSERT INTO "(d1_migrations|sqlite_sequence)" /d' "$out" && rm -f "$out.bak"
 
 # Apply via sqlite3 CLI rather than `wrangler d1 execute --local` because
 # wrangler enforces D1's ~1MB per-statement limit even locally, and large
@@ -248,6 +259,155 @@ run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --local"
 [tasks."migrate:remote"]
 description = "Apply migrations to the remote D1"
 run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --remote"
+
+[tasks."d1:replicate"]
+description = "Enable D1 read replication (mode=auto) on the remote database (idempotent)"
+run = '''
+command -v jq >/dev/null 2>&1 || { echo "✗ d1:replicate requires jq (https://jqlang.org)" >&2; exit 1; }
+
+placeholder="REPLACE_WITH_ID_FROM_wrangler_d1_create"
+db_id=$(jq -r '.d1_databases[0].database_id' wrangler.jsonc)
+if [ "$db_id" = "$placeholder" ] || [ -z "$db_id" ] || [ "$db_id" = "null" ]; then
+  echo "✗ wrangler.jsonc has no database_id yet — run: mise run d1:create" >&2
+  exit 1
+fi
+
+if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+  cfcurl() { curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$@"; }
+elif [ -n "${CLOUDFLARE_API_KEY:-}" ] && [ -n "${CLOUDFLARE_EMAIL:-}" ]; then
+  cfcurl() { curl -sS -H "X-Auth-Email: $CLOUDFLARE_EMAIL" -H "X-Auth-Key: $CLOUDFLARE_API_KEY" "$@"; }
+else
+  echo "✗ d1:replicate needs one of:" >&2
+  echo "    CLOUDFLARE_API_TOKEN           (scoped, needs D1: Edit)" >&2
+  echo "    CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL  (global key fallback)" >&2
+  exit 1
+fi
+
+API=https://api.cloudflare.com/client/v4
+acct="${CLOUDFLARE_ACCOUNT_ID:-}"
+if [ -z "$acct" ]; then
+  acct=$(cfcurl "$API/accounts" | jq -r '.result[0].id // empty')
+fi
+[ -n "$acct" ] || { echo "✗ could not determine CF account id (set CLOUDFLARE_ACCOUNT_ID)" >&2; exit 1; }
+
+current=$(cfcurl "$API/accounts/$acct/d1/database/$db_id" | jq -r '.result.read_replication.mode // "disabled"')
+if [ "$current" = "auto" ]; then
+  echo "✓ D1 read replication already enabled (mode=auto) — skipping"
+  exit 0
+fi
+
+resp=$(cfcurl -X PUT -H "Content-Type: application/json" "$API/accounts/$acct/d1/database/$db_id" -d '{"read_replication":{"mode":"auto"}}')
+if printf '%s' "$resp" | jq -e '.success' >/dev/null; then
+  echo "✓ D1 read replication enabled (mode=auto)"
+else
+  echo "✗ failed to enable read replication: $resp" >&2
+  exit 1
+fi
+'''
+
+[tasks."logpush:setup"]
+description = "Create R2 bucket '{{ project_slug }}-logs' and a Logpush job that ships Worker trace events to it (idempotent — Workers Paid plan required)"
+run = '''
+command -v jq >/dev/null 2>&1 || { echo "✗ logpush:setup requires jq (https://jqlang.org)" >&2; exit 1; }
+command -v sha256sum >/dev/null 2>&1 || command -v shasum >/dev/null 2>&1 || { echo "✗ logpush:setup requires sha256sum or shasum" >&2; exit 1; }
+sha256() { if command -v sha256sum >/dev/null 2>&1; then sha256sum | awk '{print $1}'; else shasum -a 256 | awk '{print $1}'; fi; }
+
+if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+  cfcurl() { curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$@"; }
+elif [ -n "${CLOUDFLARE_API_KEY:-}" ] && [ -n "${CLOUDFLARE_EMAIL:-}" ]; then
+  cfcurl() { curl -sS -H "X-Auth-Email: $CLOUDFLARE_EMAIL" -H "X-Auth-Key: $CLOUDFLARE_API_KEY" "$@"; }
+else
+  echo "✗ logpush:setup needs one of:" >&2
+  echo "    CLOUDFLARE_API_TOKEN           (scoped, needs User API Tokens: Edit + Workers R2 Storage: Edit + Logs Edit)" >&2
+  echo "    CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL  (global key fallback)" >&2
+  exit 1
+fi
+
+API=https://api.cloudflare.com/client/v4
+bucket="{{ project_slug }}-logs"
+job_name="{{ worker_name }}-logs"
+creds_file=".cf-logpush-r2-creds.json"
+
+acct="${CLOUDFLARE_ACCOUNT_ID:-}"
+if [ -z "$acct" ]; then
+  acct=$(cfcurl "$API/accounts" | jq -r '.result[0].id // empty')
+fi
+[ -n "$acct" ] || { echo "✗ could not determine CF account id (set CLOUDFLARE_ACCOUNT_ID)" >&2; exit 1; }
+
+# 1. R2 bucket. `wrangler r2 bucket create` 409s if it already exists; gate on list.
+if bunx wrangler r2 bucket list 2>/dev/null | grep -qE "(^|[[:space:]])${bucket}([[:space:]]|$)"; then
+  echo "• R2 bucket '$bucket' already exists — skipping"
+else
+  bunx wrangler r2 bucket create "$bucket"
+  echo "✓ R2 bucket '$bucket' created"
+fi
+
+# 2. R2 S3-compatible access key. R2 derives credentials from a CF API token:
+# access_key_id = token.id, secret_access_key = sha256(token.value). We cache
+# the result locally (gitignored) so re-runs don't mint a new key on every
+# invocation. Rotate by deleting the token in the dashboard and removing the
+# creds file.
+if [ -f "$creds_file" ]; then
+  echo "• reusing R2 creds from $creds_file"
+else
+  # Permission-group bf7481a1826f439697cb59a20b22293e = "Workers R2 Storage Write"
+  # (account-scoped). Stable UUID; lookup at /user/tokens/permission_groups.
+  body=$(jq -n --arg name "logpush-r2-{{ worker_name }}" --arg acct "$acct" \
+    '{name:$name, policies:[{effect:"allow", resources:{("com.cloudflare.api.account.\($acct)"):"*"}, permission_groups:[{id:"bf7481a1826f439697cb59a20b22293e"}]}]}')
+  token_resp=$(cfcurl -X POST -H "Content-Type: application/json" "$API/user/tokens" -d "$body")
+  if ! printf '%s' "$token_resp" | jq -e '.success' >/dev/null; then
+    echo "✗ R2 token creation failed: $token_resp" >&2
+    echo "  CLOUDFLARE_API_TOKEN must include User API Tokens: Edit + Workers R2 Storage: Edit." >&2
+    exit 1
+  fi
+  tok_id=$(printf '%s' "$token_resp" | jq -r '.result.id')
+  tok_val=$(printf '%s' "$token_resp" | jq -r '.result.value')
+  sk=$(printf %s "$tok_val" | sha256)
+  jq -n --arg ak "$tok_id" --arg sk "$sk" --arg id "$tok_id" \
+    '{access_key_id:$ak, secret_access_key:$sk, token_id:$id}' > "$creds_file"
+  chmod 600 "$creds_file"
+  echo "✓ minted R2 S3 access key (cached in $creds_file — gitignored)"
+fi
+
+ak=$(jq -r '.access_key_id' "$creds_file")
+sk=$(jq -r '.secret_access_key' "$creds_file")
+
+# 3. Logpush job — push Worker trace events to the bucket, partitioned by date.
+existing=$(cfcurl "$API/accounts/$acct/logpush/jobs" | jq -r --arg n "$job_name" '.result[]? | select(.name == $n) | .id' | head -1)
+if [ -n "$existing" ]; then
+  echo "✓ logpush job '$job_name' already exists (id=$existing) — skipping"
+  exit 0
+fi
+
+# Logpush validates the destination by writing a probe object to R2 before
+# accepting the job. A freshly-minted CF API token can 401 against R2's S3
+# endpoint for ~5-10s after creation while the credential propagates, so we
+# retry with backoff. Without this, first-run init fails with a misleading
+# "error validating destination ... Unauthorized".
+dest="r2://$bucket/{DATE}?account-id=$acct&access-key-id=$ak&secret-access-key=$sk"
+payload=$(jq -n --arg name "$job_name" --arg dest "$dest" \
+  '{name:$name, dataset:"workers_trace_events", destination_conf:$dest, enabled:true}')
+resp=""
+for delay in 0 4 8 12 20; do
+  [ "$delay" -gt 0 ] && { echo "• R2 token still propagating, retrying in ${delay}s..."; sleep "$delay"; }
+  # Use the same cfcurl function defined above (don't use -f/--fail so we can
+  # parse 4xx error bodies). cfcurl already injects the right auth header.
+  resp=$(cfcurl -X POST -H "Content-Type: application/json" "$API/accounts/$acct/logpush/jobs" -d "$payload" || true)
+  printf '%s' "$resp" | jq -e '.success' >/dev/null && break
+  # Only retry on the R2-propagation 401; any other error (plan, validation,
+  # auth on the CF side) won't fix itself with more sleep, so bail immediately.
+  printf '%s' "$resp" | jq -e '.errors[]? | select((.message // "") | test("Unauthorized|401"; "i"))' >/dev/null || break
+done
+if printf '%s' "$resp" | jq -e '.success' >/dev/null; then
+  echo "✓ logpush job '$job_name' → r2://$bucket created"
+else
+  if printf '%s' "$resp" | jq -e '.errors[]? | select((.message // "") | test("paid|plan|enable"; "i"))' >/dev/null; then
+    echo "✗ logpush requires the Workers Paid plan. Upgrade at https://dash.cloudflare.com/?to=/:account/workers/plans, then re-run." >&2
+  fi
+  echo "✗ logpush job creation failed: $resp" >&2
+  exit 1
+fi
+'''
 
 [tasks."builds:connect"]
 description = "Wire Cloudflare Workers Builds to origin's GitHub repo — repo connection + main (deploy) + preview (versions upload) triggers (idempotent)"

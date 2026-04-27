@@ -51,9 +51,13 @@ Run `mise tasks` for the full list. Highlights:
 | `mise run auth:generate` | Regenerate `src/db/schema.ts` from `better-auth.config.ts` |
 | `mise run db:generate` | `drizzle-kit generate` (emit SQL from the new schema) |
 | `mise run migrate:local` / `migrate:remote` | Apply D1 migrations |
+| `mise run d1:replicate` | Enable D1 read replication (mode=auto) on the prod database (idempotent) |
+| `mise run logpush:setup` | Create R2 bucket `{{ project_slug }}-logs` + Logpush job for Worker trace events (opt-in; idempotent) |
 | `mise run secret:put` | Ensure `BETTER_AUTH_SECRET` is set on the remote Worker (idempotent) |
 | `mise run deploy` | Build the SPA and `wrangler deploy` |
 | `mise run teardown` | Delete the remote Worker and D1 database (irreversible) |
+
+`mise init` runs `d1:replicate` automatically when wrangler is authenticated (replicas are free). `logpush:setup` is **opt-in** — the Worker is logpush-eligible (`logpush: true` in `wrangler.jsonc`) but no R2 archive job is created until you ask for it. Run `mise run logpush:setup` when you want long-term retention beyond Workers Logs' 7-day window, off-vendor analytics, or compliance/SIEM ingestion. See `CLAUDE.md` § Observability for the cost math and the empirical "Logpush is downstream of head sampling" finding.
 
 ## Deploy
 

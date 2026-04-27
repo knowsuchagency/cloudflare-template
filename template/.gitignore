@@ -12,6 +12,7 @@ worker-configuration.d.ts
 .env
 .env.local
 .cf-env.sh
+.cf-logpush-r2-creds.json
 
 # web/
 web/node_modules/
