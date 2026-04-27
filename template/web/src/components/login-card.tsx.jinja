@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SpinnerIcon, SignInIcon, UserPlusIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
-import { authClient } from "@/lib/auth-client";
+import { type AuthSession, authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export function LoginCard({ onAuthed }: { onAuthed: () => void }) {
+export function LoginCard() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
@@ -35,10 +36,10 @@ export function LoginCard({ onAuthed }: { onAuthed: () => void }) {
             <TabsTrigger value="sign-up">Sign up</TabsTrigger>
           </TabsList>
           <TabsContent value="sign-in" className="pt-4">
-            <SignInForm onAuthed={onAuthed} />
+            <SignInForm />
           </TabsContent>
           <TabsContent value="sign-up" className="pt-4">
-            <SignUpForm onAuthed={onAuthed} />
+            <SignUpForm />
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -46,26 +47,24 @@ export function LoginCard({ onAuthed }: { onAuthed: () => void }) {
   );
 }
 
-function SignInForm({ onAuthed }: { onAuthed: () => void }) {
+function SignInForm() {
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setPending(true);
-    try {
-      await authClient.signIn({ email, password });
+  const signIn = useMutation({
+    mutationFn: (input: { email: string; password: string }) =>
+      authClient.signIn(input),
+    onSuccess: (data) => {
+      queryClient.setQueryData<AuthSession | null>(["session"], data);
       toast.success("Signed in");
-      onAuthed();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Sign in failed";
-      setError(message);
-    } finally {
-      setPending(false);
-    }
+    },
+  });
+  const error =
+    signIn.error instanceof Error ? signIn.error.message : null;
+
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    signIn.mutate({ email, password });
   }
 
   return (
@@ -96,8 +95,8 @@ function SignInForm({ onAuthed }: { onAuthed: () => void }) {
           />
           <FieldError>{error}</FieldError>
         </Field>
-        <Button type="submit" disabled={pending} className="w-full">
-          {pending ? (
+        <Button type="submit" disabled={signIn.isPending} className="w-full">
+          {signIn.isPending ? (
             <SpinnerIcon data-icon="inline-start" className="animate-spin" />
           ) : (
             <SignInIcon data-icon="inline-start" />
@@ -109,27 +108,25 @@ function SignInForm({ onAuthed }: { onAuthed: () => void }) {
   );
 }
 
-function SignUpForm({ onAuthed }: { onAuthed: () => void }) {
+function SignUpForm() {
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setPending(true);
-    try {
-      await authClient.signUp({ name, email, password });
+  const signUp = useMutation({
+    mutationFn: (input: { name: string; email: string; password: string }) =>
+      authClient.signUp(input),
+    onSuccess: (data) => {
+      queryClient.setQueryData<AuthSession | null>(["session"], data);
       toast.success("Account created");
-      onAuthed();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Sign up failed";
-      setError(message);
-    } finally {
-      setPending(false);
-    }
+    },
+  });
+  const error =
+    signUp.error instanceof Error ? signUp.error.message : null;
+
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    signUp.mutate({ name, email, password });
   }
 
   return (
@@ -171,8 +168,8 @@ function SignUpForm({ onAuthed }: { onAuthed: () => void }) {
           <FieldDescription>At least 8 characters.</FieldDescription>
           <FieldError>{error}</FieldError>
         </Field>
-        <Button type="submit" disabled={pending} className="w-full">
-          {pending ? (
+        <Button type="submit" disabled={signUp.isPending} className="w-full">
+          {signUp.isPending ? (
             <SpinnerIcon data-icon="inline-start" className="animate-spin" />
           ) : (
             <UserPlusIcon data-icon="inline-start" />

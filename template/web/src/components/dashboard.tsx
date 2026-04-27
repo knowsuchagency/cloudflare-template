@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SignOutIcon, SpinnerIcon, UserCircleIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -13,28 +13,18 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-export function Dashboard({
-  user,
-  onSignedOut,
-}: {
-  user: AuthUser;
-  onSignedOut: () => void;
-}) {
-  const [pending, setPending] = useState(false);
-
-  async function handleSignOut() {
-    setPending(true);
-    try {
-      await authClient.signOut();
+export function Dashboard({ user }: { user: AuthUser }) {
+  const queryClient = useQueryClient();
+  const signOut = useMutation({
+    mutationFn: () => authClient.signOut(),
+    onSuccess: () => {
+      queryClient.setQueryData(["session"], null);
       toast.success("Signed out");
-      onSignedOut();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Sign out failed";
-      toast.error(message);
-    } finally {
-      setPending(false);
-    }
-  }
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Sign out failed");
+    },
+  });
 
   return (
     <Card className="w-full max-w-md">
@@ -66,12 +56,12 @@ export function Dashboard({
           />
         </div>
         <Button
-          onClick={handleSignOut}
-          disabled={pending}
+          onClick={() => signOut.mutate()}
+          disabled={signOut.isPending}
           variant="outline"
           className="mt-6 w-full"
         >
-          {pending ? (
+          {signOut.isPending ? (
             <SpinnerIcon data-icon="inline-start" className="animate-spin" />
           ) : (
             <SignOutIcon data-icon="inline-start" />
