@@ -49,6 +49,7 @@ mise run dev              # builds SPA (source-tracked) then wrangler dev
 mise run typecheck        # Worker + web together
 mise run web:build        # SPA only; mise caches based on sources
 mise run deploy           # web:build -> wrangler deploy
+mise run update-from-template  # `copier update` against the parent template
 ```
 
 For a fresh worktree (e.g. fulcrum task branch) where you want production-like data without touching remote resources:

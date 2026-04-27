@@ -457,3 +457,37 @@ run = [
   "bunx wrangler delete --name {{ worker_name }}",
   "bunx wrangler d1 delete {{ d1_database_name }} -y",
 ]
+
+[tasks."update-from-template"]
+description = "Pull updates from the parent copier template (https://copier.readthedocs.io/en/stable/updating/)"
+usage = '''
+flag "--defaults" help="reuse all stored answers in .copier-answers.yml without prompting"
+'''
+run = '''
+command -v uvx >/dev/null 2>&1 || { echo "✗ update-from-template requires uvx (https://docs.astral.sh/uv/)" >&2; exit 1; }
+
+if [ ! -f .copier-answers.yml ]; then
+  echo "✗ .copier-answers.yml not found — this project was not generated from a copier template" >&2
+  exit 1
+fi
+
+# Copier refuses to update a dirty tree (including untracked files) so conflicts
+# can be reviewed via `git diff`. Match its check here for a faster, clearer error.
+if [ -n "$(git status --porcelain)" ]; then
+  echo "✗ working tree is dirty — commit, stash, or .gitignore changes before updating" >&2
+  exit 1
+fi
+
+# --trust is needed because copier.yml defines _tasks (mise install, bun install,
+# wrangler types) which copier refuses to run untrusted. We're trusting our own
+# template; a user who's worried can inspect copier.yml first.
+extra=""
+if [ "${usage_defaults:-false}" = "true" ]; then
+  extra="--defaults"
+fi
+
+uvx copier update --trust $extra "$@"
+
+echo "✓ template update applied — review changes with \`git status\` / \`git diff\`."
+echo "  Conflict markers (if any) are inline; resolve, then commit."
+'''
