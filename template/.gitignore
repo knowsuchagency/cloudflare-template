@@ -26,3 +26,6 @@ web/.vite/
 .eslintcache
 .cache
 *.tsbuildinfo
+
+# Claude Code per-session local state (scheduled task locks, plans, etc.)
+.claude/
