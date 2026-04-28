@@ -171,7 +171,13 @@ sqlite_file=$(find .wrangler/state/v3/d1/miniflare-D1DatabaseObject -maxdepth 1 
 [ -n "$sqlite_file" ] || { echo "✗ could not locate local D1 SQLite file under .wrangler/state/v3/d1" >&2; exit 1; }
 sqlite3 "$sqlite_file" ".read $out"
 
-echo "✓ local D1 populated from prod data — run: mise run dev"
+echo "✓ local D1 populated from prod data"
+
+# Build the SPA so wrangler.jsonc's assets.directory (./web/dist) exists
+# for the first `mise run dev` — wrangler dev refuses to start without it.
+mise run web:build
+
+echo "✓ ready — run: mise run dev"
 '''
 
 [tasks."web:build"]
