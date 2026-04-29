@@ -319,6 +319,108 @@ echo "✓ wrangler.jsonc patched with preview database_id $id"
 description = "Apply migrations to the remote preview D1 ({{ d1_database_name }}-preview)"
 run = "bunx wrangler d1 migrations apply {{ d1_database_name }}-preview --remote --env preview"
 
+[tasks."seed:preview-from-prod"]
+description = "Mirror prod data into the preview D1 (wipes preview first; preserves preview schema). Use to reproduce a prod issue or get logged-in accounts on preview."
+run = '''
+set -e
+
+command -v jq >/dev/null 2>&1 || { echo "✗ seed:preview-from-prod requires jq" >&2; exit 1; }
+bunx wrangler whoami >/dev/null 2>&1 || { echo "✗ wrangler not authenticated — run: bunx wrangler login" >&2; exit 1; }
+
+# 1. Discover prod's user-data tables (skip wrangler/SQLite bookkeeping). The
+#    set is the source of truth — anything you add via a migration shows up
+#    here automatically without editing this task.
+tables_json=$(bunx wrangler d1 execute {{ d1_database_name }} --remote --json --command \
+  "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'd1_%' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'")
+tables=$(printf '%s' "$tables_json" | jq -r '.[0].results[].name')
+[ -n "$tables" ] || { echo "✗ no data tables found on prod" >&2; exit 1; }
+
+# 2. Wipe preview's existing rows. FKs aren't enforced unless `PRAGMA
+#    foreign_keys=ON` is set per-connection (D1 defaults to off), so DELETE
+#    order doesn't matter. Discover preview's tables independently — preview
+#    may have extra tables from this branch's unmerged migration that prod
+#    doesn't have, and we want to wipe those too.
+preview_tables=$(bunx wrangler d1 execute {{ d1_database_name }}-preview --remote --json --command \
+  "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'd1_%' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'" \
+  | jq -r '.[0].results[].name')
+for t in $preview_tables; do
+  bunx wrangler d1 execute {{ d1_database_name }}-preview --remote --command "DELETE FROM \"$t\";" >/dev/null
+done
+echo "✓ wiped preview data ($(printf '%s' "$preview_tables" | wc -w | tr -d ' ') tables)"
+
+# 3. Copy each prod table into preview as its own export+import pair. We do
+#    this per-table rather than as one bulk export because D1's import endpoint
+#    consistently 500s on combined exports above ~1500 INSERTs, even when each
+#    individual statement is well under the 1MB-per-statement limit. Per-table
+#    imports each run in their own request and never trip that ceiling.
+#
+#    `wrangler d1 export` emits column-named INSERTs (`INSERT INTO "x" ("a",
+#    "b") VALUES (...)`), so rows still land cleanly when preview has extra
+#    columns added by an unmerged migration — the new columns get their
+#    DEFAULT. Tables that exist only on preview (added by an unmerged
+#    migration with no prod data) simply don't appear here and stay empty.
+tmpdir=$(mktemp -d -t prod-data.XXXXXX)
+trap 'rm -rf "$tmpdir"' EXIT
+
+count_rows() {
+  # Wrangler's --json output is normally `[{results:[{c:N}],...}]` but on
+  # transient errors it returns `{error:{...}}` — make jq tolerant of both
+  # so a flaky probe doesn't abort the whole seed.
+  bunx wrangler d1 execute "$1" --remote --json --command "SELECT COUNT(*) AS c FROM \"$2\"" 2>/dev/null \
+    | jq -r 'if type=="array" then .[0].results[0].c else 0 end' 2>/dev/null \
+    || echo 0
+}
+
+failed=""
+for t in $tables; do
+  out="$tmpdir/$t.sql"
+  bunx wrangler d1 export {{ d1_database_name }} --remote --no-schema --table="$t" --output="$out" >/dev/null 2>&1 || {
+    echo "  ✗ export failed for $t" >&2
+    failed="$failed $t"
+    continue
+  }
+  rows=$(grep -c "^INSERT" "$out" || echo 0)
+  if [ "$rows" -eq 0 ]; then
+    echo "  • $t: 0 rows — skipping"
+    continue
+  fi
+  # `wrangler d1 export` prepends `PRAGMA defer_foreign_keys=TRUE;` which
+  # defers FK checks to commit time — fine for an all-tables-in-one-import
+  # but useless for per-table imports because each import commits in its
+  # own transaction with the parent table possibly still empty (e.g.
+  # `account.user_id` → `user.id` when `account` imports before `user`).
+  # Replace with `PRAGMA foreign_keys=OFF;` so the imports land regardless
+  # of order; FK integrity holds because the rows came from a consistent
+  # prod snapshot.
+  sed -i.bak '1s/.*/PRAGMA foreign_keys=OFF;/' "$out" && rm -f "$out.bak"
+  # Verify by row count rather than trusting wrangler's exit code, which
+  # occasionally reports D1_RESET_DO / 7500 on attempts that actually wrote
+  # the rows. Retry with backoff if the row count comes up short.
+  preview_rows=0
+  for try in 1 2 3; do
+    [ "$try" -gt 1 ] && {
+      bunx wrangler d1 execute {{ d1_database_name }}-preview --remote --command "DELETE FROM \"$t\";" >/dev/null 2>&1 || true
+      sleep $((try * 2))
+    }
+    bunx wrangler d1 execute {{ d1_database_name }}-preview --remote --file="$out" >/dev/null 2>&1 || true
+    preview_rows=$(count_rows {{ d1_database_name }}-preview "$t")
+    [ "$preview_rows" = "$rows" ] && break
+  done
+  if [ "$preview_rows" = "$rows" ]; then
+    [ "$try" -eq 1 ] && echo "  ✓ $t: $rows rows" || echo "  ✓ $t: $rows rows (took $try attempts)"
+  else
+    echo "  ✗ $t: imported $preview_rows / expected $rows" >&2
+    failed="$failed $t"
+  fi
+done
+
+if [ -n "$failed" ]; then
+  echo "✗ preview seed completed with failures:$failed" >&2
+  exit 1
+fi
+echo "✓ preview seeded from prod"
+'''
+
 [tasks."secret:put-preview"]
 description = "Ensure BETTER_AUTH_SECRET is set on the preview Worker (idempotent — preview Worker must already exist; run `mise run deploy:preview` first)"
 run = '''
