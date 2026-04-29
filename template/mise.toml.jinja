@@ -93,12 +93,22 @@ if bunx wrangler whoami >/dev/null 2>&1; then
   mise run secret:put
   mise run migrate:remote
   mise run d1:replicate
+{%- if enable_preview_env %}
+  mise run d1:create-preview
+  mise run migrate:remote-preview
+{%- endif %}
   # `mise run logpush:setup` is intentionally NOT auto-run — it's opt-in.
   # The Worker is already logpush-eligible (`logpush: true` in wrangler.jsonc),
   # so you can wire up a Logpush job to R2 whenever you actually need
   # long-term archival, off-vendor analytics, or compliance retention.
+{%- if enable_preview_env %}
+  # `mise run secret:put-preview` is also opt-in — the preview Worker has to be
+  # deployed at least once before secrets can be set on it. Run it after the
+  # first `mise run deploy:preview` (or after the first Workers Builds preview
+  # run completes) and before exercising auth flows on the preview URL.
+{%- endif %}
 else
-  echo "ℹ Skipping remote bootstrap — run \`bunx wrangler login\` (or re-run init with --headless), then \`mise run d1:create && mise run secret:put && mise run migrate:remote && mise run d1:replicate\`"
+  echo "ℹ Skipping remote bootstrap — run \`bunx wrangler login\` (or re-run init with --headless), then \`mise run d1:create && mise run secret:put && mise run migrate:remote && mise run d1:replicate{% if enable_preview_env %} && mise run d1:create-preview && mise run migrate:remote-preview{% endif %}\`"
 fi
 
 if [ "${usage_github:-false}" = "true" ]; then
@@ -265,6 +275,141 @@ run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --local"
 [tasks."migrate:remote"]
 description = "Apply migrations to the remote D1"
 run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --remote"
+
+{% if enable_preview_env -%}
+[tasks."d1:create-preview"]
+description = "Create the remote preview D1 ({{ d1_database_name }}-preview) and patch its database_id into env.preview in wrangler.jsonc (idempotent)"
+run = '''
+placeholder="REPLACE_WITH_ID_FROM_wrangler_d1_create_preview"
+
+if ! grep -q "$placeholder" wrangler.jsonc; then
+  echo "✓ wrangler.jsonc already has a preview database_id — skipping"
+  exit 0
+fi
+
+command -v jq >/dev/null 2>&1 || { echo "✗ d1:create-preview requires jq (https://jqlang.org)" >&2; exit 1; }
+
+id=""
+if list_json=$(bunx wrangler d1 list --json 2>/dev/null); then
+  id=$(printf '%s' "$list_json" | jq -r --arg name "{{ d1_database_name }}-preview" '.[] | select(.name == $name) | .uuid' | head -1)
+fi
+
+if [ -n "$id" ]; then
+  echo "• remote D1 '{{ d1_database_name }}-preview' already exists — reusing $id"
+else
+  create_out=$(printf 'n\n' | bunx wrangler d1 create "{{ d1_database_name }}-preview" 2>&1) || {
+    printf '%s\n' "$create_out" >&2
+    exit 1
+  }
+  printf '%s\n' "$create_out"
+  id=$(printf '%s' "$create_out" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+fi
+
+if [ -z "$id" ]; then
+  echo "✗ could not determine preview D1 database_id from wrangler output" >&2
+  exit 1
+fi
+
+tmp=$(mktemp)
+sed "s|$placeholder|$id|" wrangler.jsonc > "$tmp" && mv "$tmp" wrangler.jsonc
+echo "✓ wrangler.jsonc patched with preview database_id $id"
+'''
+
+[tasks."migrate:remote-preview"]
+description = "Apply migrations to the remote preview D1 ({{ d1_database_name }}-preview)"
+run = "bunx wrangler d1 migrations apply {{ d1_database_name }}-preview --remote --env preview"
+
+[tasks."secret:put-preview"]
+description = "Ensure BETTER_AUTH_SECRET is set on the preview Worker (idempotent — preview Worker must already exist; run `mise run deploy:preview` first)"
+run = '''
+command -v jq >/dev/null 2>&1 || { echo "✗ secret:put-preview requires jq (https://jqlang.org)" >&2; exit 1; }
+
+# `wrangler secret list --env preview` errors if the preview Worker hasn't been deployed yet.
+# Surface a clear hint instead of the raw "Worker not found" stack trace.
+if ! list_out=$(bunx wrangler secret list --env preview 2>&1); then
+  if printf '%s' "$list_out" | grep -q "not found"; then
+    echo "✗ preview Worker '{{ worker_name }}-preview' has not been deployed yet — run \`mise run deploy:preview\` first" >&2
+    exit 1
+  fi
+  printf '%s\n' "$list_out" >&2
+  exit 1
+fi
+
+if printf '%s' "$list_out" | jq -e 'any(.name == "BETTER_AUTH_SECRET")' >/dev/null 2>&1; then
+  echo "✓ BETTER_AUTH_SECRET already set on {{ worker_name }}-preview — skipping"
+  exit 0
+fi
+
+openssl rand -base64 32 | bunx wrangler secret put BETTER_AUTH_SECRET --env preview
+'''
+
+[tasks."deploy:preview"]
+description = "Build the SPA and deploy the preview Worker (auto-patches env.preview.vars.BETTER_AUTH_URL on first deploy)"
+depends = ["web:build"]
+run = '''
+if grep -q REPLACE_WITH_ID_FROM_wrangler_d1_create_preview wrangler.jsonc; then
+  echo "✗ wrangler.jsonc still has the preview D1 id placeholder — run: mise run d1:create-preview" >&2
+  exit 1
+fi
+
+# In env.preview the placeholder appears as `"BETTER_AUTH_URL": "http://localhost:8787"`
+# (same default as prod). After first preview deploy we patch ONLY the env.preview block
+# by anchoring on the workers.dev URL we extract from wrangler's output. The prod block
+# is untouched if it's already been patched by `mise run deploy`.
+deploy_out=$(bunx wrangler deploy --env preview 2>&1) || {
+  printf '%s\n' "$deploy_out" >&2
+  exit 1
+}
+printf '%s\n' "$deploy_out"
+
+url=$(printf '%s' "$deploy_out" | grep -oE "https://{{ worker_name }}-preview\.[a-z0-9-]+\.workers\.dev" | head -1)
+if [ -z "$url" ]; then
+  echo "⚠ wrangler deploy succeeded but no preview *.workers.dev URL was found." >&2
+  exit 0
+fi
+
+# Use python to do a structural patch — surgical edit of env.preview.vars.BETTER_AUTH_URL
+# only. Naïve sed risks rewriting the prod URL too.
+command -v python3 >/dev/null 2>&1 || { echo "⚠ python3 not found — please set env.preview.vars.BETTER_AUTH_URL to $url manually" >&2; exit 0; }
+
+python3 - "$url" <<'PY' || true
+import json, re, sys, pathlib
+url = sys.argv[1]
+p = pathlib.Path("wrangler.jsonc")
+src = p.read_text()
+# Strip // line comments and trailing commas so json.loads accepts JSONC, but
+# keep the original src for the replacement (we don't want to rewrite the file
+# without comments).
+no_comments = re.sub(r"^\s*//.*$", "", src, flags=re.M)
+no_comments = re.sub(r",(\s*[}\]])", r"\1", no_comments)
+data = json.loads(no_comments)
+current = data.get("env", {}).get("preview", {}).get("vars", {}).get("BETTER_AUTH_URL")
+if current == url:
+    print(f"✓ env.preview.vars.BETTER_AUTH_URL already = {url}")
+    sys.exit(0)
+# Replace inside the env.preview block only — anchor by a sentinel line that's unique to it.
+# The block starts with `"name": "{{ worker_name }}-preview"` so we slice from there.
+m = re.search(r'"name"\s*:\s*"([^"]+-preview)"', src)
+if not m:
+    print("✗ could not locate env.preview block in wrangler.jsonc", file=sys.stderr)
+    sys.exit(1)
+start = m.end()
+# Find the next `"BETTER_AUTH_URL"` key after the env.preview start.
+patched = src[:start] + re.sub(
+    r'("BETTER_AUTH_URL"\s*:\s*")[^"]*(")',
+    rf'\g<1>{url}\g<2>',
+    src[start:],
+    count=1,
+)
+p.write_text(patched)
+print(f"✓ wrangler.jsonc patched: env.preview.vars.BETTER_AUTH_URL → {url}")
+PY
+
+echo "↻ redeploying preview so the Worker env picks up the new BETTER_AUTH_URL..."
+bunx wrangler deploy --env preview
+'''
+
+{%- endif %}
 
 [tasks."d1:replicate"]
 description = "Enable D1 read replication (mode=auto) on the remote database (idempotent)"
@@ -548,7 +693,7 @@ upsert_trigger() {
 # That's the API shape for "all non-production branches" — it's how the dashboard
 # checkbox is implemented under the hood, not a separate is_production flag.
 upsert_trigger "main"    "bun run ci:build"         "npx wrangler deploy"          '["main"]' '[]'
-upsert_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload" '["*"]'    '["main"]'
+upsert_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload{% if enable_preview_env %} --env preview{% endif %}" '["*"]'    '["main"]'
 
 echo "✓ Workers Builds ready — push to 'main' deploys; push to any other branch produces a preview URL commented on the PR."
 '''
@@ -621,7 +766,13 @@ bunx wrangler deploy
 description = "Delete the remote Worker and D1 database (irreversible)"
 run = [
   "bunx wrangler delete --name {{ worker_name }}",
+{%- if enable_preview_env %}
+  "bunx wrangler delete --name {{ worker_name }}-preview || true",
+{%- endif %}
   "bunx wrangler d1 delete {{ d1_database_name }} -y",
+{%- if enable_preview_env %}
+  "bunx wrangler d1 delete {{ d1_database_name }}-preview -y || true",
+{%- endif %}
 ]
 
 [tasks."update-from-template"]

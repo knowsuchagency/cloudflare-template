@@ -23,5 +23,27 @@
   },
   "vars": {
     "BETTER_AUTH_URL": "http://localhost:8787"
-  }
+  }{% if enable_preview_env %},
+  // Branch deploys (anything that isn't `main`) ship as versions of a separate
+  // Worker `{{ worker_name }}-preview` with its own D1, so schema changes can
+  // be exercised end-to-end without touching production data. Workers Builds
+  // invokes `wrangler versions upload --env preview` for the preview trigger.
+  // d1_databases / vars are non-inheritable — every binding the preview worker
+  // uses must be redeclared here.
+  "env": {
+    "preview": {
+      "name": "{{ worker_name }}-preview",
+      "vars": {
+        "BETTER_AUTH_URL": "http://localhost:8787"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "{{ d1_database_name }}-preview",
+          "database_id": "REPLACE_WITH_ID_FROM_wrangler_d1_create_preview",
+          "migrations_dir": "./drizzle"
+        }
+      ]
+    }
+  }{% endif %}
 }
