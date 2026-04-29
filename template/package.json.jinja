@@ -12,11 +12,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply {{ d1_database_name }} --local",
     "db:migrate:remote": "wrangler d1 migrations apply {{ d1_database_name }} --remote",
-{%- if enable_preview_env %}
     "db:migrate:remote:preview": "wrangler d1 migrations apply {{ d1_database_name }}-preview --remote --env preview",
-{%- endif %}
     "ci:build": "bun install && bun install --cwd web && cd web && bun run build && cd .. && bun run db:migrate:remote",
-    "ci:build:preview": "bun install && bun install --cwd web && cd web && bun run build{% if enable_preview_env %} && cd .. && bun run db:migrate:remote:preview{% endif %}"
+    "ci:build:preview": "bun install && bun install --cwd web && cd web && bun run build && cd .. && bun run db:migrate:remote:preview"
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",

@@ -78,11 +78,7 @@ Remote D1 migrations apply automatically on push to `main` when Workers Builds i
 
 Ordering inside `ci:build`: install deps → build SPA → apply D1 migrations → (Workers Builds then runs `wrangler deploy`). D1 lands before the Worker, so migrations must stay forward-compatible with the currently-deployed Worker — destructive schema changes require two pushes (first push: code tolerating both schemas; second push: the drop).
 
-{% if enable_preview_env -%}
 Non-production branches run `ci:build:preview`, which migrates the **preview** D1 (`{{ d1_database_name }}-preview`) and uploads a version of the `{{ worker_name }}-preview` Worker via `wrangler versions upload --env preview`. The preview Worker has its own D1 binding (declared under `env.preview.d1_databases`), so schema changes can be exercised end-to-end on PRs without affecting production data. All non-main branches share that single preview DB — no per-PR isolation. If a PR's migration is incompatible with what's already on the preview DB (because a different branch's migration ran first), wipe and re-bootstrap with `wrangler d1 execute {{ d1_database_name }}-preview --remote --command 'DROP TABLE d1_migrations'` followed by `mise run migrate:remote-preview`.
-{%- else -%}
-Non-production branches run `ci:build:preview` instead, which is `ci:build` **without** `db:migrate:remote`. PR previews share the production D1, so an unreviewed migration must not land there; preview builds therefore run the new code against the *current* schema. A PR that needs a new column won't fully work in preview until the PR merges and `main` deploys — that's by design.
-{%- endif %}
 
 `better-auth.config.ts` uses an in-memory `better-sqlite3` DB because the CLI doesn't need a real connection to emit drizzle table definitions — only the adapter shape.
 
@@ -103,7 +99,7 @@ mise run builds:connect
 Idempotently calls the Cloudflare API to attach this repo to `{{ worker_name }}` and create two triggers:
 
 - `main` → `bun run ci:build` → `wrangler deploy` (production)
-- all other branches → `bun run ci:build:preview` → `wrangler versions upload{% if enable_preview_env %} --env preview{% endif %}` (preview-only version; does not replace production{% if enable_preview_env %}; ships under the `{{ worker_name }}-preview` Worker{% endif %})
+- all other branches → `bun run ci:build:preview` → `wrangler versions upload --env preview` (preview-only version; does not replace production; ships under the `{{ worker_name }}-preview` Worker)
 
 One-time prerequisite: install the [Cloudflare Workers & Pages GitHub App](https://github.com/apps/cloudflare-workers-and-pages) on the repo's owner. The task detects an unauthorized app and prints the install link.
 
@@ -126,7 +122,6 @@ Workers Builds auto-comments both on the PR.
 
 `mise run web:build` + `mise run deploy` produce a real production bundle of the SPA into `web/dist` (which the Worker's `assets` binding serves at deploy time). For deployed environments only — the dev server doesn't read `web/dist`.
 
-{% if enable_preview_env -%}
 ## Preview environment
 
 `wrangler.jsonc` declares an `env.preview` block that overrides the `DB` D1 binding (and the `BETTER_AUTH_URL` var) so non-main branches deploy to a separate Worker `{{ worker_name }}-preview` backed by the `{{ d1_database_name }}-preview` D1. `wrangler versions upload --env preview` is what Workers Builds runs for the preview trigger.
@@ -152,7 +147,6 @@ Caveats:
 - **OAuth callbacks need separate preview entries** — Better Auth and any third-party OAuth provider that rejects unknown redirect URIs need the preview workers.dev URL added to their allowed-origins lists.
 - **Secrets are per-environment.** Set them with `wrangler secret put <NAME> --env preview` (or via `mise run secret:put-preview` for `BETTER_AUTH_SECRET`).
 
-{% endif -%}
 ## Observability
 
 **Workers Logs: 100% by default, no head sampling.** `wrangler.jsonc` only enables `observability` (no `head_sampling_rate`), so every request produces a trace event. Pricing: 20M logs/month included on Workers Paid, then $0.60/M. There's a built-in safety valve — *if you ever blow past the daily portion of the monthly quota, Cloudflare auto-applies a 1% head sample for the rest of that day*, so a runaway log spike costs visibility, not money. To opt into per-Worker sampling on purpose (e.g. once you're at 100M+ req/mo), add `"head_sampling_rate": 0.X` under `observability` in `wrangler.jsonc`. Local `wrangler dev` is naturally exempt either way — its logs go to stdout, not Workers Logs.

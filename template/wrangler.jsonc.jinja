@@ -23,7 +23,7 @@
   },
   "vars": {
     "BETTER_AUTH_URL": "http://localhost:8787"
-  }{% if enable_preview_env %},
+  },
   // Branch deploys (anything that isn't `main`) ship as versions of a separate
   // Worker `{{ worker_name }}-preview` with its own D1, so schema changes can
   // be exercised end-to-end without touching production data. Workers Builds
@@ -45,5 +45,5 @@
         }
       ]
     }
-  }{% endif %}
+  }
 }

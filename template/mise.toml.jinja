@@ -93,22 +93,18 @@ if bunx wrangler whoami >/dev/null 2>&1; then
   mise run secret:put
   mise run migrate:remote
   mise run d1:replicate
-{%- if enable_preview_env %}
   mise run d1:create-preview
   mise run migrate:remote-preview
-{%- endif %}
   # `mise run logpush:setup` is intentionally NOT auto-run — it's opt-in.
   # The Worker is already logpush-eligible (`logpush: true` in wrangler.jsonc),
   # so you can wire up a Logpush job to R2 whenever you actually need
   # long-term archival, off-vendor analytics, or compliance retention.
-{%- if enable_preview_env %}
   # `mise run secret:put-preview` is also opt-in — the preview Worker has to be
   # deployed at least once before secrets can be set on it. Run it after the
   # first `mise run deploy:preview` (or after the first Workers Builds preview
   # run completes) and before exercising auth flows on the preview URL.
-{%- endif %}
 else
-  echo "ℹ Skipping remote bootstrap — run \`bunx wrangler login\` (or re-run init with --headless), then \`mise run d1:create && mise run secret:put && mise run migrate:remote && mise run d1:replicate{% if enable_preview_env %} && mise run d1:create-preview && mise run migrate:remote-preview{% endif %}\`"
+  echo "ℹ Skipping remote bootstrap — run \`bunx wrangler login\` (or re-run init with --headless), then \`mise run d1:create && mise run secret:put && mise run migrate:remote && mise run d1:replicate && mise run d1:create-preview && mise run migrate:remote-preview\`"
 fi
 
 if [ "${usage_github:-false}" = "true" ]; then
@@ -276,7 +272,6 @@ run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --local"
 description = "Apply migrations to the remote D1"
 run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --remote"
 
-{% if enable_preview_env -%}
 [tasks."d1:create-preview"]
 description = "Create the remote preview D1 ({{ d1_database_name }}-preview) and patch its database_id into env.preview in wrangler.jsonc (idempotent)"
 run = '''
@@ -510,8 +505,6 @@ PY
 echo "↻ redeploying preview so the Worker env picks up the new BETTER_AUTH_URL..."
 bunx wrangler deploy --env preview
 '''
-
-{%- endif %}
 
 [tasks."d1:replicate"]
 description = "Enable D1 read replication (mode=auto) on the remote database (idempotent)"
@@ -795,7 +788,7 @@ upsert_trigger() {
 # That's the API shape for "all non-production branches" — it's how the dashboard
 # checkbox is implemented under the hood, not a separate is_production flag.
 upsert_trigger "main"    "bun run ci:build"         "npx wrangler deploy"          '["main"]' '[]'
-upsert_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload{% if enable_preview_env %} --env preview{% endif %}" '["*"]'    '["main"]'
+upsert_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload --env preview" '["*"]'    '["main"]'
 
 echo "✓ Workers Builds ready — push to 'main' deploys; push to any other branch produces a preview URL commented on the PR."
 '''
@@ -868,13 +861,9 @@ bunx wrangler deploy
 description = "Delete the remote Worker and D1 database (irreversible)"
 run = [
   "bunx wrangler delete --name {{ worker_name }}",
-{%- if enable_preview_env %}
   "bunx wrangler delete --name {{ worker_name }}-preview || true",
-{%- endif %}
   "bunx wrangler d1 delete {{ d1_database_name }} -y",
-{%- if enable_preview_env %}
   "bunx wrangler d1 delete {{ d1_database_name }}-preview -y || true",
-{%- endif %}
 ]
 
 [tasks."update-from-template"]

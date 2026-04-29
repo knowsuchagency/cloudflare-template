@@ -74,17 +74,3 @@ d1_database_name:
   type: str
   help: "Cloudflare D1 database name."
   default: "{{ project_slug }}-db"
-
-enable_preview_env:
-  type: bool
-  help: |
-    Provision an isolated `preview` environment with its own D1 (separate Worker named
-    {{ worker_name }}-preview, separate database). Branch deploys via Workers Builds will
-    apply migrations to the preview DB, so PRs that include schema changes can be exercised
-    end-to-end without touching production data. Adds the env.preview block to
-    wrangler.jsonc, parallel migrate:remote-preview / secret:put-preview / deploy:preview
-    tasks, and routes the preview Workers Builds trigger through `--env preview`.
-    Trade-offs: preview shares one D1 across all branches (no per-PR isolation);
-    custom-domain routes stay prod-only; OAuth callback URLs need to be registered for
-    the preview workers.dev URL separately.
-  default: false
