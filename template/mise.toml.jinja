@@ -203,7 +203,22 @@ run = '''
 # BETTER_AUTH_URL in .dev.vars must match it (the `init` task seeds
 # that automatically). The trap kills the background vite when wrangler
 # exits (Ctrl+C, crash).
-( cd web && bunx vite ) &
+#
+# When tailscale is up, vite is also bound to the tailscale IPv4 so the
+# SPA is reachable from other tailnet devices at http://<host>:5173/
+# without exposing it to the LAN. Wrangler dev stays on localhost —
+# vite proxies /api etc to it, so the worker is never on the network.
+# If you browse the tailnet URL, set BETTER_AUTH_URL in .dev.vars to
+# match (e.g. http://<host>:5173) or auth callbacks will fail.
+vite_args=""
+if command -v tailscale >/dev/null 2>&1; then
+  ts_ip="$(tailscale ip -4 2>/dev/null | head -n1)"
+  if [ -n "$ts_ip" ]; then
+    vite_args="--host $ts_ip"
+    echo "↳ tailnet: SPA on http://$ts_ip:5173/" >&2
+  fi
+fi
+( cd web && bunx vite $vite_args ) &
 vite_pid=$!
 trap 'kill $vite_pid 2>/dev/null; exit' EXIT INT TERM
 bunx wrangler dev
