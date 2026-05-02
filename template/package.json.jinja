@@ -8,20 +8,25 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "cf-typegen": "wrangler types",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "auth:generate": "better-auth generate --config ./better-auth.config.ts --output ./src/db/schema.ts -y",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply {{ d1_database_name }} --local",
     "db:migrate:remote": "wrangler d1 migrations apply {{ d1_database_name }} --remote",
     "db:migrate:remote:preview": "wrangler d1 migrations apply {{ d1_database_name }}-preview --remote --env preview",
-    "ci:build": "bun install && bun install --cwd web && cd web && bun run build && cd .. && bun run db:migrate:remote",
-    "ci:build:preview": "bun install && bun install --cwd web && cd web && bun run build && cd .. && bun run db:migrate:remote:preview"
+    "ci:build": "bun install && bun install --cwd web && cd web && bun run build && cd .. && bun run test && bun run db:migrate:remote",
+    "ci:build:preview": "bun install && bun install --cwd web && cd web && bun run build && cd .. && bun run test && bun run db:migrate:remote:preview"
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",
+    "@cloudflare/vitest-pool-workers": "^0.15.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "latest",
     "better-sqlite3": "^12.9.0",
     "drizzle-kit": "^0.31.10",
+    "jsonc-parser": "^3.3.1",
+    "vitest": "^4.1.5",
     "wrangler": "^4.85.0"
   },
   "peerDependencies": {

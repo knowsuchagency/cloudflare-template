@@ -30,7 +30,7 @@ import { betterAuthOptions } from "./options";
  * but Worker `vars` aren't exposed there — they only reach us via `env`,
  * which is why we plumb it explicitly.
  */
-function deriveTrustedOrigins(env: Env): string[] {
+export function deriveTrustedOrigins(env: Env): string[] {
   const origins = new Set<string>();
 
   try {

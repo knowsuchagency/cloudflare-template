@@ -231,6 +231,14 @@ run = [
   "cd web && bunx tsc --noEmit",
 ]
 
+[tasks.test]
+description = "Run the test suite (vitest in @cloudflare/vitest-pool-workers)"
+run = "bunx vitest run"
+
+[tasks."test:watch"]
+description = "Run the test suite in watch mode"
+run = "bunx vitest"
+
 [tasks."auth:generate"]
 description = "Regenerate src/db/schema.ts from better-auth config"
 run = "bunx better-auth generate --config ./better-auth.config.ts --output ./src/db/schema.ts -y"
@@ -285,6 +293,7 @@ run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --local"
 
 [tasks."migrate:remote"]
 description = "Apply migrations to the remote D1"
+depends = ["d1:create"]
 run = "bunx wrangler d1 migrations apply {{ d1_database_name }} --remote"
 
 [tasks."d1:create-preview"]
@@ -327,10 +336,12 @@ echo "✓ wrangler.jsonc patched with preview database_id $id"
 
 [tasks."migrate:remote-preview"]
 description = "Apply migrations to the remote preview D1 ({{ d1_database_name }}-preview)"
+depends = ["d1:create-preview"]
 run = "bunx wrangler d1 migrations apply {{ d1_database_name }}-preview --remote --env preview"
 
 [tasks."seed:preview-from-prod"]
 description = "Mirror prod data into the preview D1 (wipes preview first; preserves preview schema). Use to reproduce a prod issue or get logged-in accounts on preview."
+depends = ["d1:create-preview", "migrate:remote-preview"]
 run = '''
 set -e
 
@@ -457,7 +468,7 @@ openssl rand -base64 32 | bunx wrangler secret put BETTER_AUTH_SECRET --env prev
 
 [tasks."deploy:preview"]
 description = "Build the SPA and deploy the preview Worker (auto-patches env.preview.vars.BETTER_AUTH_URL on first deploy)"
-depends = ["web:build"]
+depends = ["web:build", "d1:create-preview", "migrate:remote-preview"]
 run = '''
 if grep -q REPLACE_WITH_ID_FROM_wrangler_d1_create_preview wrangler.jsonc; then
   echo "✗ wrangler.jsonc still has the preview D1 id placeholder — run: mise run d1:create-preview" >&2
@@ -523,6 +534,7 @@ bunx wrangler deploy --env preview
 
 [tasks."d1:replicate"]
 description = "Enable D1 read replication (mode=auto) on the remote database (idempotent)"
+depends = ["d1:create"]
 run = '''
 command -v jq >/dev/null 2>&1 || { echo "✗ d1:replicate requires jq (https://jqlang.org)" >&2; exit 1; }
 
@@ -809,11 +821,12 @@ echo "✓ Workers Builds ready — push to 'main' deploys; push to any other bra
 '''
 
 [tasks."ci:local"]
-description = "Local mirror of `bun run ci:build`: install deps, build SPA, apply local D1 migrations (no deploy)"
+description = "Local mirror of `bun run ci:build`: install deps, build SPA, run tests, apply local D1 migrations (no deploy)"
 run = [
   "bun install",
   "bun install --cwd web",
   "cd web && bun run build",
+  "bun run test",
   "bun run db:migrate:local",
 ]
 
@@ -834,7 +847,7 @@ openssl rand -base64 32 | bunx wrangler secret put BETTER_AUTH_SECRET
 
 [tasks.deploy]
 description = "Build the SPA and deploy the Worker (auto-patches BETTER_AUTH_URL on first deploy)"
-depends = ["web:build"]
+depends = ["web:build", "d1:create", "migrate:remote"]
 run = '''
 if grep -q REPLACE_WITH_ID_FROM_wrangler_d1_create wrangler.jsonc; then
   echo "✗ wrangler.jsonc still has the D1 id placeholder — run: mise run d1:create" >&2

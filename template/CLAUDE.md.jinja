@@ -82,6 +82,39 @@ Non-production branches run `ci:build:preview`, which migrates the **preview** D
 
 `better-auth.config.ts` uses an in-memory `better-sqlite3` DB because the CLI doesn't need a real connection to emit drizzle table definitions — only the adapter shape.
 
+## Tests
+
+`mise run test` (or `bun run test`) — vitest runs everything inside real `workerd` via `@cloudflare/vitest-pool-workers`. D1 migrations from `./drizzle` apply to an in-memory test DB; the prod `wrangler.jsonc` config (sans the production `database_id`, which workerd ignores) supplies bindings; `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` are injected via miniflare bindings in `vitest.config.ts`. Use `mise run test:watch` while iterating.
+
+What's covered today:
+
+- **`test/auth.test.ts`** — sign-up → /api/me → sign-in → sign-out, end-to-end through `SELF.fetch()`. Locks in the four auth gotchas below — any regression flips the suite red.
+- **`test/lib/derive-trusted-origins.test.ts`** — workers.dev auto-derive, custom domain, malformed URL, CSV merge.
+- **`test/safeguards/no-runaway-fanout.test.ts`** — the **fan-out tripwire**.
+
+The tripwire is the headline. A worker that calls itself in a loop (or a queue consumer that re-publishes to its own queue, or a DO alarm scheduling more alarms) can't be reached by Cloudflare's public-facing kill-switch — DNS/routes/custom domains stay external. The protection has to live inside the worker. See [pizzaconsole.com/blog/posts/programming/cf-overage](https://pizzaconsole.com/blog/posts/programming/cf-overage) for the threat model.
+
+This template intentionally **does not** prescribe one safeguard pattern (hop-count headers, queue envelopes, alarm budgets, …) because different fan-out shapes need different mitigations. Instead, the tripwire fails the build the moment any of these surfaces appears in `wrangler.jsonc` without an explicit acknowledgment:
+
+- `queues.producers`, `queues.consumers`
+- `services` (service bindings)
+- `durable_objects.bindings`
+- `triggers.crons`
+- `workflows`
+- `tail_consumers`
+
+When the tripwire fires after you add a binding:
+
+1. Decide what stops a runaway loop for that surface — a hop-count header on outgoing fetches, a `depth` field on queue messages with a low `max_retries` + DLQ, a per-DO alarm budget in storage, a shared-secret + counter on a service binding caller, etc.
+2. Uncomment / add the corresponding entry in the `REVIEWED` map at the top of `test/safeguards/no-runaway-fanout.test.ts` with a one-line note pointing at the test that proves the safeguard.
+3. Add a behavioral test under `test/safeguards/` that exercises the surface end-to-end and asserts it terminates (e.g. a queue consumer test that tries to re-publish, sees the depth guard fire, and stops).
+
+Removing a binding? Delete its `REVIEWED` entry in the same change.
+
+`bun run ci:build` runs `bun run test` before `wrangler deploy`, so a failing suite blocks production deploys (and previews via `ci:build:preview`). `mise run ci:local` is the local mirror.
+
+SPA component tests aren't here yet — the auth e2e flow already exercises the same `/api/auth/*` endpoints `web/src/lib/auth-client.ts` calls. Add `vitest` + `@testing-library/react` under `web/` when there's UI logic worth covering directly.
+
 ## Deploy
 
 Two paths. **Local ad-hoc:**
@@ -171,6 +204,8 @@ const rows = await session.prepare("SELECT * FROM user").all();
 The task creates `{{ project_slug }}-logs` R2 bucket, mints an S3-compatible R2 access key (cached in `.cf-logpush-r2-creds.json`, gitignored), and creates a Logpush job that ships `workers_trace_events` to `r2://{{ project_slug }}-logs/{DATE}/...`. *Empirically verified*: Logpush is downstream of `head_sampling_rate` — sampled-out requests don't produce trace events for either Workers Logs or Logpush. With no head sampling (the default), R2 sees the full firehose. Rotate the R2 access key by deleting the `logpush-r2-{{ worker_name }}` token in the dashboard and removing `.cf-logpush-r2-creds.json`; the next `mise run logpush:setup` mints a fresh one.
 
 ## Auth-specific gotchas
+
+These are pinned by `test/auth.test.ts` — if you change auth wiring, run `mise run test`.
 
 - Better Auth requires `env.BETTER_AUTH_SECRET` (a wrangler secret) and `env.BETTER_AUTH_URL`. The Env type is augmented in `src/env.d.ts` to include `BETTER_AUTH_SECRET` since it's not in `wrangler.jsonc`.
 - `options.ts` sets `advanced.ipAddress.ipAddressHeaders: ["cf-connecting-ip"]` — without this better-auth logs rate-limiter warnings on Workers.
