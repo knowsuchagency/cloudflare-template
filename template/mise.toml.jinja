@@ -117,7 +117,7 @@ fi
 if [ -d .git ] && ! git rev-parse --verify HEAD >/dev/null 2>&1; then
   git add -A
   git commit -q -m "initial commit from cloudflare-better-auth-d1 template"
-  echo "✓ initial commit (includes .copier-answers.yml for future `copier update`)"
+  echo "✓ initial commit (includes .copier-answers.yml for future copier update)"
 fi
 
 if [ "${usage_github:-false}" = "true" ]; then
