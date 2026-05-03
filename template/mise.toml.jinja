@@ -107,12 +107,20 @@ else
   echo "ℹ Skipping remote bootstrap — run \`bunx wrangler login\` (or re-run init with --headless), then \`mise run d1:create && mise run secret:put && mise run migrate:remote && mise run d1:replicate && mise run d1:create-preview && mise run migrate:remote-preview\`"
 fi
 
+# If a git repo exists with no commits yet (either user-initialized or
+# created by --github above), make the initial commit. This captures
+# .copier-answers.yml (so future `copier update` knows the rendered state),
+# the wrangler.jsonc patched with the real D1 ID, the .gitignore, etc. —
+# everything the template wrote and `mise init` configured. Runs
+# regardless of --github so users who only want a local repo still get
+# their copier metadata tracked.
+if [ -d .git ] && ! git rev-parse --verify HEAD >/dev/null 2>&1; then
+  git add -A
+  git commit -q -m "initial commit from cloudflare-better-auth-d1 template"
+  echo "✓ initial commit (includes .copier-answers.yml for future `copier update`)"
+fi
+
 if [ "${usage_github:-false}" = "true" ]; then
-  if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
-    git add -A
-    git commit -q -m "initial commit from cloudflare-better-auth-d1 template"
-    echo "✓ initial commit"
-  fi
   if git remote get-url origin >/dev/null 2>&1; then
     echo "• origin already set — skipping gh repo create"
   else

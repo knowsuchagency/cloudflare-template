@@ -27,7 +27,9 @@ _message_after_copy: |
   Next steps:
     bunx wrangler login       # one-time CF auth (or see headless below)
     mise init                 # deps + .dev.vars + local migrations + remote D1 +
-                              # BETTER_AUTH_SECRET + remote migrations
+                              # BETTER_AUTH_SECRET + remote migrations + initial
+                              # git commit (captures .copier-answers.yml so
+                              # `mise run update-from-template` works later)
     mise dev                  # http://localhost:8787
     mise deploy               # ship to *.workers.dev
 
@@ -35,6 +37,10 @@ _message_after_copy: |
   otherwise it prints a hint. Run
   `mise run d1:create && mise run secret:put && mise run migrate:remote`
   manually after logging in. Requires `jq`.
+
+  init's initial commit only fires when git is empty (no HEAD yet). If you
+  prefer to manage git yourself, just remember to include .copier-answers.yml
+  in your first commit — `copier update` needs it.
 
   Headless Linux / no browser? `wrangler login` fails with
   "Missing file or directory: xdg-open". Copy .env.local.example to
