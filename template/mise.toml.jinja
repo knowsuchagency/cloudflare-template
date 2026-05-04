@@ -822,15 +822,14 @@ upsert_trigger() {
 # `branch_includes: ["*"]` is only accepted alongside a non-empty `branch_excludes`.
 # That's the API shape for "all non-production branches" — it's how the dashboard
 # checkbox is implemented under the hood, not a separate is_production flag.
-# `wrangler versions upload --env preview` honors env.preview's bindings/vars
-# but NOT env.preview.name — the upload still lands on the top-level Worker
-# unless --name is passed explicitly. Without it, branch preview URLs
-# (`<branch>-{{ worker_name }}.workers.dev`) become versions of the prod
-# Worker that wear preview bindings, which is the worst-of-both-worlds:
-# wrangler deployments list still shows it, and any accidental
-# `wrangler versions deploy` would point prod traffic at the preview D1.
+# Workers Builds is connected per-Worker — every trigger configured on
+# {{ worker_name }} can only upload to {{ worker_name }} (not a sibling
+# Worker), regardless of `--env` or `--name` flags. So preview branches
+# upload versions of the prod Worker; the env.preview block in
+# wrangler.jsonc is ignored for these uploads. Schema/binding changes
+# in PRs need to be forward-compatible with the live prod resources.
 upsert_trigger "main"    "bun run ci:build"         "npx wrangler deploy"          '["main"]' '[]'
-upsert_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload --env preview --name {{ worker_name }}-preview" '["*"]'    '["main"]'
+upsert_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload" '["*"]'    '["main"]'
 
 echo "✓ Workers Builds ready — push to 'main' deploys; push to any other branch produces a preview URL commented on the PR."
 '''
