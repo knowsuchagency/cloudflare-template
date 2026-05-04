@@ -80,3 +80,14 @@ d1_database_name:
   type: str
   help: "Cloudflare D1 database name."
   default: "{{ project_slug }}-db"
+
+cloudflare_account_subdomain:
+  type: str
+  help: |
+    Cloudflare account subdomain — the `<sub>` in `<worker>.<sub>.workers.dev`
+    (find it in the Workers dashboard URL). Used to seed BETTER_AUTH_TRUSTED_ORIGINS
+    with `https://*.<sub>.workers.dev` so Workers Builds preview URLs pass auth
+    on the very first deploy, before mise has a chance to patch BETTER_AUTH_URL.
+    Leave empty to skip; the runtime auto-derives wildcards from BETTER_AUTH_URL
+    once it's been patched to the deployed *.workers.dev URL.
+  default: "knowsuchagency"

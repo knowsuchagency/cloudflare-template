@@ -22,7 +22,13 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    "BETTER_AUTH_URL": "http://localhost:8787"
+    "BETTER_AUTH_URL": "http://localhost:8787"{% if cloudflare_account_subdomain %},
+    // Workers Builds preview URLs (`<version>-{{ worker_name }}.<sub>.workers.dev`)
+    // are siblings of the prod URL under the same account subdomain. Seeding the
+    // wildcard here means auth works on previews even before `mise run deploy`
+    // patches BETTER_AUTH_URL to the deployed origin (which would let
+    // deriveTrustedOrigins() infer the same wildcard automatically).
+    "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %}
   },
   // Branch deploys (anything that isn't `main`) ship as versions of a separate
   // Worker `{{ worker_name }}-preview` with its own D1, so schema changes can
@@ -41,7 +47,8 @@
       // top-level config grows.
       "routes": [],
       "vars": {
-        "BETTER_AUTH_URL": "http://localhost:8787"
+        "BETTER_AUTH_URL": "http://localhost:8787"{% if cloudflare_account_subdomain %},
+        "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %}
       },
       "d1_databases": [
         {
