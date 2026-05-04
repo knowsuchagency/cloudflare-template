@@ -33,6 +33,13 @@
   "env": {
     "preview": {
       "name": "{{ worker_name }}-preview",
+      // `routes` IS inheritable. The day someone adds a top-level
+      // custom-domain route here, the next `wrangler deploy --env preview`
+      // would silently inherit it and reassign the prod hostname to the
+      // preview Worker — an outage. Pinning routes=[] makes the preview
+      // Worker incapable of owning a custom domain regardless of what
+      // top-level config grows.
+      "routes": [],
       "vars": {
         "BETTER_AUTH_URL": "http://localhost:8787"
       },
