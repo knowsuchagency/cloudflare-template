@@ -54,7 +54,7 @@ function Inner({ user }: { user: AuthUser }) {
           <div className="mb-2 text-[11px] font-semibold tracking-[0.14em] text-[var(--bf-orange)] uppercase">
             <span className="mr-2">##</span>SESSION
           </div>
-          <h1 className="m-0 font-mono text-3xl font-semibold text-[var(--fg-1)]">
+          <h1 className="m-0 font-sans text-3xl font-semibold text-[var(--fg-1)]">
             Welcome back, {user.name}.
           </h1>
         </div>
@@ -124,8 +124,8 @@ function Row({
       </dt>
       <dd
         className={
-          "font-mono text-sm " +
-          (mono ? "text-xs text-[var(--fg-2)]" : "")
+          "text-sm " +
+          (mono ? "font-mono text-xs text-[var(--fg-2)]" : "font-sans")
         }
         style={color ? { color } : undefined}
       >

@@ -9,7 +9,7 @@ const BTN_TRANSITION =
 
 const buttonVariants = cva(
   cn(
-    "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-none border-2 border-transparent font-mono font-semibold whitespace-nowrap select-none outline-none",
+    "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-none border-2 border-transparent font-sans font-semibold whitespace-nowrap select-none outline-none",
     BTN_TRANSITION,
     "focus-visible:ring-2 focus-visible:ring-[var(--bf-orange)]/60 focus-visible:ring-offset-0",
     "disabled:pointer-events-none disabled:opacity-50",

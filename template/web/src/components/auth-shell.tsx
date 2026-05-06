@@ -29,7 +29,7 @@ export function AuthShell({
       <main className="relative z-10 flex flex-1 items-center justify-center px-6 pb-20 sm:px-14">
         <div className="w-full max-w-md">
           <div className="mb-6">
-            <h1 className="m-0 mb-2 font-mono text-[28px] leading-tight font-semibold text-[var(--fg-1)]">
+            <h1 className="m-0 mb-2 font-sans text-[28px] leading-tight font-semibold text-[var(--fg-1)]">
               {title}
             </h1>
             {description && (
