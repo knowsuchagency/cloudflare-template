@@ -1,39 +1,33 @@
 "use client"
 
-import { useTheme } from "next-themes"
+import type * as React from "react"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CheckCircleIcon, InfoIcon, WarningIcon, XCircleIcon, SpinnerIcon } from "@phosphor-icons/react"
+import {
+  CircleCheck,
+  CircleX,
+  Info,
+  Loader,
+  TriangleAlert,
+} from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="dark"
       className="toaster group"
       icons={{
-        success: (
-          <CheckCircleIcon className="size-4" />
-        ),
-        info: (
-          <InfoIcon className="size-4" />
-        ),
-        warning: (
-          <WarningIcon className="size-4" />
-        ),
-        error: (
-          <XCircleIcon className="size-4" />
-        ),
-        loading: (
-          <SpinnerIcon className="size-4 animate-spin" />
-        ),
+        success: <CircleCheck className="size-4 text-[var(--term-green)]" />,
+        info: <Info className="size-4 text-[var(--term-blue)]" />,
+        warning: <TriangleAlert className="size-4 text-[var(--term-amber)]" />,
+        error: <CircleX className="size-4 text-[var(--term-red)]" />,
+        loading: <Loader className="size-4 animate-spin text-[var(--bf-orange)]" />,
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--normal-bg": "var(--bg-1)",
+          "--normal-text": "var(--fg-1)",
+          "--normal-border": "var(--border-1)",
+          "--border-radius": "0px",
         } as React.CSSProperties
       }
       toastOptions={{

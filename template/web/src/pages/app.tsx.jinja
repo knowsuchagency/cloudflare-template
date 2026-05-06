@@ -1,0 +1,136 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { Link, useNavigate } from "react-router"
+import { CircleUser, Loader, LogOut } from "lucide-react"
+import { toast } from "sonner"
+
+import { type AuthUser, authClient } from "@/lib/auth-client"
+import { useSession } from "@/lib/auth-guards"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Wordmark } from "@/components/marketing/wordmark"
+
+export function AppPage() {
+  const { data: session } = useSession()
+  if (!session) return null
+  return <Inner user={session.user} />
+}
+
+function Inner({ user }: { user: AuthUser }) {
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+
+  const signOut = useMutation({
+    mutationFn: () => authClient.signOut(),
+    onSuccess: () => {
+      queryClient.setQueryData(["session"], null)
+      toast.success("Signed out")
+      navigate("/", { replace: true })
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Sign out failed")
+    },
+  })
+
+  return (
+    <div className="relative min-h-svh bg-[var(--bg-0)]">
+      <header className="relative z-10 flex items-center justify-between border-b border-[var(--border-1)] px-6 py-5 sm:px-14">
+        <Link to="/" className="no-underline">
+          <Wordmark text="{{ app_title }}" size="md" />
+        </Link>
+        <div className="flex items-center gap-3 text-sm text-[var(--fg-2)]">
+          <CircleUser className="size-5 text-[var(--bf-orange)]" />
+          <span className="hidden sm:inline">{user.email}</span>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-2xl px-6 py-12 sm:px-14">
+        <div className="mb-8">
+          <div className="mb-2 text-[11px] font-semibold tracking-[0.14em] text-[var(--bf-orange)] uppercase">
+            <span className="mr-2">##</span>SESSION
+          </div>
+          <h1 className="m-0 font-mono text-3xl font-semibold text-[var(--fg-1)]">
+            Welcome back, {user.name}.
+          </h1>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Account</CardTitle>
+            <CardDescription>
+              Signed in via Better Auth on Cloudflare D1.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <dl className="flex flex-col gap-0">
+              <Row label="User ID" value={user.id} mono />
+              <Row label="Name" value={user.name} />
+              <Row label="Email" value={user.email} />
+              <Row
+                label="Email verified"
+                value={user.emailVerified ? "yes" : "no"}
+                color={
+                  user.emailVerified
+                    ? "var(--term-green)"
+                    : "var(--term-amber)"
+                }
+              />
+              <Row
+                label="Created"
+                value={new Date(user.createdAt).toLocaleString()}
+              />
+            </dl>
+
+            <Button
+              onClick={() => signOut.mutate()}
+              disabled={signOut.isPending}
+              variant="outline"
+              className="mt-8 w-full"
+            >
+              {signOut.isPending ? (
+                <Loader className="animate-spin" />
+              ) : (
+                <LogOut />
+              )}
+              Sign out
+            </Button>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  )
+}
+
+function Row({
+  label,
+  value,
+  mono,
+  color,
+}: {
+  label: string
+  value: string
+  mono?: boolean
+  color?: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-dashed border-[var(--border-1)] py-3 last:border-b-0">
+      <dt className="text-[11px] font-semibold tracking-[0.12em] text-[var(--fg-3)] uppercase">
+        {label}
+      </dt>
+      <dd
+        className={
+          "font-mono text-sm " +
+          (mono ? "text-xs text-[var(--fg-2)]" : "")
+        }
+        style={color ? { color } : undefined}
+      >
+        {value}
+      </dd>
+    </div>
+  )
+}

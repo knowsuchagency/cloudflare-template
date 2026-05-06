@@ -1,39 +1,47 @@
-import { useQuery } from "@tanstack/react-query";
-import { SpinnerIcon } from "@phosphor-icons/react";
+import { Navigate, Route, Routes } from "react-router"
 
-import { authClient } from "@/lib/auth-client";
-import { LoginCard } from "@/components/login-card";
-import { Dashboard } from "@/components/dashboard";
-import { Toaster } from "@/components/ui/sonner";
+import { RequireAuth, RequireGuest } from "@/lib/auth-guards"
+import { Toaster } from "@/components/ui/sonner"
+
+import { Landing } from "@/pages/landing"
+import { Login } from "@/pages/login"
+import { Signup } from "@/pages/signup"
+import { AppPage } from "@/pages/app"
 
 export function App() {
-  const { data: session, isPending } = useQuery({
-    queryKey: ["session"],
-    queryFn: async () => {
-      try {
-        return await authClient.getSession();
-      } catch {
-        return null;
-      }
-    },
-  });
-
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6">
-      {isPending ? (
-        <SpinnerIcon size={28} className="animate-spin text-muted-foreground" />
-      ) : session ? (
-        <Dashboard user={session.user} />
-      ) : (
-        <LoginCard />
-      )}
-      <p className="text-xs text-muted-foreground">
-        Press <kbd className="rounded bg-muted px-1.5 py-0.5">d</kbd> to toggle
-        dark mode.
-      </p>
+    <>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route
+          path="/login"
+          element={
+            <RequireGuest>
+              <Login />
+            </RequireGuest>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <RequireGuest>
+              <Signup />
+            </RequireGuest>
+          }
+        />
+        <Route
+          path="/app"
+          element={
+            <RequireAuth>
+              <AppPage />
+            </RequireAuth>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
       <Toaster />
-    </div>
-  );
+    </>
+  )
 }
 
-export default App;
+export default App

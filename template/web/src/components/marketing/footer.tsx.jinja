@@ -1,0 +1,30 @@
+import type { ReactNode } from "react"
+
+import { Wordmark } from "@/components/marketing/wordmark"
+
+export function Footer() {
+  return (
+    <footer className="flex items-center justify-between gap-6 border-t border-[var(--border-1)] py-10 text-[12px] text-[var(--fg-3)]">
+      <Wordmark text="{{ app_title }}" size="sm" />
+      <div className="flex gap-6">
+        <FooterLink>Privacy</FooterLink>
+        <FooterLink>Security</FooterLink>
+        <FooterLink>Changelog</FooterLink>
+        <FooterLink>Status</FooterLink>
+        <FooterLink>GitHub</FooterLink>
+      </div>
+      <div>&copy; {new Date().getFullYear()} {{ app_title }}</div>
+    </footer>
+  )
+}
+
+function FooterLink({ children }: { children: ReactNode }) {
+  return (
+    <a
+      href="#"
+      className="text-[var(--fg-3)] no-underline transition-colors duration-[80ms] hover:text-[var(--fg-1)]"
+    >
+      {children}
+    </a>
+  )
+}

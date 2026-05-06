@@ -1,0 +1,47 @@
+import { Github } from "lucide-react"
+import { Link } from "react-router"
+
+import { Button } from "@/components/ui/button"
+import { Wordmark } from "@/components/marketing/wordmark"
+
+export function Nav() {
+  return (
+    <nav className="flex items-center justify-between py-7">
+      <Link to="/" className="no-underline">
+        <Wordmark text="{{ app_title }}" size="md" />
+      </Link>
+
+      <div className="flex items-center gap-8 text-sm">
+        <a
+          href="#features"
+          className="text-[var(--fg-1)] no-underline transition-colors duration-[80ms] hover:text-[var(--bf-orange)]"
+        >
+          Features
+        </a>
+        <a
+          href="#"
+          className="text-[var(--fg-1)] no-underline transition-colors duration-[80ms] hover:text-[var(--bf-orange)]"
+        >
+          Docs
+        </a>
+        <a
+          href="https://github.com"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="GitHub"
+          className="text-[var(--fg-1)] transition-colors duration-[80ms] hover:text-[var(--bf-orange)]"
+        >
+          <Github className="size-[18px]" />
+        </a>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/login">Sign in</Link>
+        </Button>
+        <Button size="sm" asChild>
+          <Link to="/signup">
+            Sign up <span aria-hidden>&rarr;</span>
+          </Link>
+        </Button>
+      </div>
+    </nav>
+  )
+}

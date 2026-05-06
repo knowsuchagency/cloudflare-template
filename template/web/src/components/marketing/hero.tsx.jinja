@@ -1,0 +1,47 @@
+import { Link } from "react-router"
+
+import { Button } from "@/components/ui/button"
+import { Wordmark } from "@/components/marketing/wordmark"
+import { TerminalPanel } from "@/components/marketing/terminal-panel"
+
+export function Hero() {
+  return (
+    <section className="grid grid-cols-1 items-start gap-10 py-10 lg:grid-cols-2 lg:gap-20 lg:pt-20 lg:pb-10">
+      <div className="max-w-[540px]">
+        <Wordmark text="{{ app_title }}" size="hero" cursor className="mb-8" />
+
+        <h2 className="m-0 mb-7 font-mono text-[28px] leading-[1.35] font-normal text-[var(--fg-1)]">
+          {{ app_tagline }}
+        </h2>
+
+        <p className="m-0 mb-9 text-[15px] leading-[1.7] text-[var(--fg-2)]">
+          A typed full-stack starter on Cloudflare Workers. Hono on the edge,
+          React + Vite on the front, Better Auth on top of D1. Sign up, sign
+          in, and start shipping.
+        </p>
+
+        <div className="flex items-center gap-[14px]">
+          <Button size="lg" asChild>
+            <Link to="/signup">
+              Get started <span aria-hidden>&rarr;</span>
+            </Link>
+          </Button>
+          <Button size="lg" variant="outline" asChild>
+            <Link to="/login">
+              Sign in <span aria-hidden>&rarr;</span>
+            </Link>
+          </Button>
+        </div>
+
+        <p className="mt-[18px] text-[12px] text-[var(--fg-3)]">
+          <span className="text-[var(--bf-orange)]">·</span> Free during preview ·
+          Bring your own runtime
+        </p>
+      </div>
+
+      <div>
+        <TerminalPanel />
+      </div>
+    </section>
+  )
+}

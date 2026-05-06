@@ -5,126 +5,295 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-    --font-heading: var(--font-mono);
-    --font-mono: 'JetBrains Mono Variable', monospace;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
-}
-
+/* =============================================================
+   BITFORGE DESIGN SYSTEM TOKENS
+   Neobrutalist, monospace, single orange accent on warm near-black.
+   ============================================================= */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+  /* SURFACES — dark canonical */
+  --bg-0: #0a0908;
+  --bg-1: #121110;
+  --bg-2: #1a1816;
+  --bg-3: #232120;
+
+  /* SURFACES — paper (reserved for docs/diagrams) */
+  --paper-0: #f2eee4;
+  --paper-1: #eae5d8;
+  --paper-2: #dcd6c5;
+  --paper-grid: rgba(10, 9, 8, 0.06);
+  --ink-1: #0a0908;
+  --ink-2: #2d2a26;
+  --ink-3: #6e6a63;
+
+  /* FOREGROUND on dark */
+  --fg-1: #f5f1ea;
+  --fg-2: #b8b2a7;
+  --fg-3: #6e6a63;
+  --fg-4: #3a3833;
+
+  /* BORDERS */
+  --border-1: #2a2825;
+  --border-2: #3d3a36;
+  --border-3: #524e48;
+
+  /* BRAND — the orange */
+  --bf-orange: #ff6b1a;
+  --bf-orange-hot: #ff8533;
+  --bf-orange-deep: #d9520a;
+  --bf-orange-dim: #7a3410;
+
+  /* SEMANTIC — terminal palette */
+  --term-green: #2ee6a8;
+  --term-green-dim: #1a8c66;
+  --term-amber: #f2b33d;
+  --term-red: #ff5a5a;
+  --term-blue: #5ab0ff;
+  --term-purple: #c78bff;
+  --term-cyan: #4fd8e0;
+
+  /* MAC TRAFFIC LIGHTS */
+  --tl-red: #ff5f57;
+  --tl-amber: #febc2e;
+  --tl-green: #28c840;
+
+  /* TYPE STACKS */
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "SF Mono", "Menlo",
+    "Consolas", monospace;
+  --font-pixel: "Departure Mono", "JetBrains Mono Variable", "JetBrains Mono",
+    monospace;
+  --font-sans: "JetBrains Mono Variable", "JetBrains Mono", system-ui,
+    sans-serif;
+
+  /* TYPE SCALE — multiples of 4 */
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-base: 15px;
+  --fs-md: 17px;
+  --fs-lg: 20px;
+  --fs-xl: 24px;
+  --fs-2xl: 32px;
+  --fs-3xl: 44px;
+  --fs-4xl: 64px;
+  --fs-5xl: 96px;
+
+  --lh-tight: 1.1;
+  --lh-snug: 1.25;
+  --lh-base: 1.5;
+  --lh-loose: 1.7;
+
+  --tracking-tight: -0.02em;
+  --tracking-base: 0;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.12em;
+
+  /* SPACING — 4px grid */
+  --s-0: 0px;
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-20: 80px;
+  --s-24: 96px;
+
+  /* RADIUS — hard edges are the brand */
+  --radius: 0;
+  --r-0: 0px;
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 6px;
+  --r-pill: 9999px;
+
+  /* BORDERS */
+  --bw-1: 1px;
+  --bw-2: 2px;
+  --bw-3: 3px;
+
+  /* SHADOWS — neobrutalist hard offsets + dark glows */
+  --shadow-brutal-sm: 4px 4px 0 0 var(--ink-1);
+  --shadow-brutal: 6px 6px 0 0 var(--ink-1);
+  --shadow-brutal-lg: 10px 10px 0 0 var(--ink-1);
+  --shadow-brutal-orange: 6px 6px 0 0 var(--bf-orange);
+  --glow-orange: 0 0 24px rgba(255, 107, 26, 0.35);
+  --glow-green: 0 0 16px rgba(46, 230, 168, 0.4);
+  --glow-soft: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  /* MOTION — snappy, no bounces */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.8, 0.3);
+  --ease-step: steps(4, end);
+  --dur-fast: 80ms;
+  --dur-base: 160ms;
+  --dur-slow: 320ms;
+
+  /* SHADCN SEMANTIC ALIASES — drive shadcn utilities through Bitforge tokens */
+  --background: var(--bg-0);
+  --foreground: var(--fg-1);
+  --card: var(--bg-1);
+  --card-foreground: var(--fg-1);
+  --popover: var(--bg-1);
+  --popover-foreground: var(--fg-1);
+  --primary: var(--bf-orange);
+  --primary-foreground: #0a0908;
+  --secondary: var(--bg-2);
+  --secondary-foreground: var(--fg-1);
+  --muted: var(--bg-2);
+  --muted-foreground: var(--fg-3);
+  --accent: var(--bg-2);
+  --accent-foreground: var(--fg-1);
+  --destructive: var(--term-red);
+  --border: var(--border-1);
+  --input: var(--border-1);
+  --ring: var(--bf-orange);
+  --chart-1: var(--bf-orange);
+  --chart-2: var(--term-green);
+  --chart-3: var(--term-blue);
+  --chart-4: var(--term-purple);
+  --chart-5: var(--term-amber);
+  --sidebar: var(--bg-1);
+  --sidebar-foreground: var(--fg-1);
+  --sidebar-primary: var(--bf-orange);
+  --sidebar-primary-foreground: #0a0908;
+  --sidebar-accent: var(--bg-2);
+  --sidebar-accent-foreground: var(--fg-1);
+  --sidebar-border: var(--border-1);
+  --sidebar-ring: var(--bf-orange);
 }
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+@theme inline {
+  --font-heading: var(--font-pixel);
+  --font-mono: var(--font-mono);
+  --font-pixel: var(--font-pixel);
+  --font-sans: var(--font-sans);
+
+  --color-bg-0: var(--bg-0);
+  --color-bg-1: var(--bg-1);
+  --color-bg-2: var(--bg-2);
+  --color-bg-3: var(--bg-3);
+  --color-fg-1: var(--fg-1);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-fg-4: var(--fg-4);
+  --color-border-1: var(--border-1);
+  --color-border-2: var(--border-2);
+  --color-border-3: var(--border-3);
+  --color-bf-orange: var(--bf-orange);
+  --color-bf-orange-hot: var(--bf-orange-hot);
+  --color-bf-orange-deep: var(--bf-orange-deep);
+  --color-bf-orange-dim: var(--bf-orange-dim);
+  --color-term-green: var(--term-green);
+  --color-term-amber: var(--term-amber);
+  --color-term-red: var(--term-red);
+  --color-term-blue: var(--term-blue);
+  --color-term-purple: var(--term-purple);
+  --color-term-cyan: var(--term-cyan);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  --radius-sm: 0px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 8px;
+  --radius-3xl: 10px;
+  --radius-4xl: 12px;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
+  }
+
   html {
-    @apply font-mono;
+    font-family: var(--font-mono);
+  }
+
+  body {
+    background: var(--bg-0);
+    color: var(--fg-1);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* The single allowed gradient — radial orange glow behind the wordmark */
+  body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 900px;
+    background: radial-gradient(
+      ellipse at 30% 35%,
+      rgba(255, 107, 26, 0.18) 0%,
+      rgba(255, 107, 26, 0) 60%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Wordmark cursor */
+  @keyframes bf-blink {
+    50% {
+      opacity: 0;
     }
+  }
+
+  /* Status dot pulse */
+  @keyframes bf-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+}
+
+@utility shadow-brutal-orange {
+  box-shadow: 4px 4px 0 0 var(--bf-orange-deep);
+}
+@utility shadow-brutal-orange-lg {
+  box-shadow: 6px 6px 0 0 var(--bf-orange-deep);
+}
+@utility shadow-brutal-ink {
+  box-shadow: 4px 4px 0 0 rgba(245, 241, 234, 0.85);
 }

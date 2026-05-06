@@ -1,0 +1,97 @@
+import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { Link, useNavigate } from "react-router"
+import { Loader, LogIn } from "lucide-react"
+import { toast } from "sonner"
+
+import { authClient, type AuthSession } from "@/lib/auth-client"
+import { AuthShell } from "@/components/auth-shell"
+import { Button } from "@/components/ui/button"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+
+export function Login() {
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+
+  const signIn = useMutation({
+    mutationFn: (input: { email: string; password: string }) =>
+      authClient.signIn(input),
+    onSuccess: (data) => {
+      queryClient.setQueryData<AuthSession | null>(["session"], data)
+      toast.success("Signed in")
+      navigate("/app", { replace: true })
+    },
+  })
+
+  const error = signIn.error instanceof Error ? signIn.error.message : null
+
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    signIn.mutate({ email, password })
+  }
+
+  return (
+    <AuthShell
+      appTitle="{{ app_title }}"
+      title="Sign in"
+      description="Welcome back. Enter your credentials to continue."
+      footer={
+        <>
+          No account yet?{" "}
+          <Link
+            to="/signup"
+            className="text-[var(--bf-orange)] underline-offset-4 hover:underline"
+          >
+            Create one
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit}>
+        <FieldGroup>
+          <Field data-invalid={error ? true : undefined}>
+            <FieldLabel htmlFor="signin-email">Email</FieldLabel>
+            <Input
+              id="signin-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              aria-invalid={error ? true : undefined}
+            />
+          </Field>
+          <Field data-invalid={error ? true : undefined}>
+            <FieldLabel htmlFor="signin-password">Password</FieldLabel>
+            <Input
+              id="signin-password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              aria-invalid={error ? true : undefined}
+            />
+            <FieldError>{error}</FieldError>
+          </Field>
+          <Button type="submit" disabled={signIn.isPending} className="w-full">
+            {signIn.isPending ? (
+              <Loader className="animate-spin" />
+            ) : (
+              <LogIn />
+            )}
+            Sign in <span aria-hidden>&rarr;</span>
+          </Button>
+        </FieldGroup>
+      </form>
+    </AuthShell>
+  )
+}
