@@ -12,8 +12,8 @@ export function InstallBlock() {
   }
 
   return (
-    <div className="my-8 flex justify-end">
-      <div className="flex min-w-[480px] items-center gap-[10px] border-2 border-[var(--border-1)] bg-[var(--bg-1)] px-[14px] py-[10px] text-[13px]">
+    <div className="flex">
+      <div className="flex flex-1 items-center gap-[10px] border-2 border-t-0 border-[var(--border-1)] bg-[var(--bg-1)] px-[14px] py-[10px] text-[13px]">
         <span className="font-bold text-[var(--bf-orange)]">$</span>
         <span className="flex-1 font-mono text-[var(--fg-1)]">
           bunx wrangler{" "}

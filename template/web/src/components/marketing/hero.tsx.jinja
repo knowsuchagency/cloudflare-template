@@ -2,7 +2,8 @@ import { Link } from "react-router"
 
 import { Button } from "@/components/ui/button"
 import { Wordmark } from "@/components/marketing/wordmark"
-import { TerminalPanel } from "@/components/marketing/terminal-panel"
+import { StampLedger } from "@/components/marketing/stamp-ledger"
+import { InstallBlock } from "@/components/marketing/install-block"
 
 export function Hero() {
   return (
@@ -39,8 +40,9 @@ export function Hero() {
         </p>
       </div>
 
-      <div>
-        <TerminalPanel />
+      <div className="flex flex-col">
+        <StampLedger />
+        <InstallBlock />
       </div>
     </section>
   )
