@@ -20,18 +20,16 @@ const buttonVariants = cva(
       variant: {
         default: cn(
           "bg-[var(--bf-orange)] text-[#0a0908] border-[var(--bf-orange)]",
-          "shadow-[4px_4px_0_0_var(--bf-orange-deep)]",
           "hover:bg-[var(--bf-orange-hot)] hover:border-[var(--bf-orange-hot)]",
-          "hover:shadow-[5px_5px_0_0_var(--bf-orange-deep),0_0_22px_rgba(255,107,26,0.35)]",
+          "hover:shadow-[0_0_22px_rgba(255,107,26,0.35)]",
           "hover:-translate-x-px hover:-translate-y-px",
           "active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
         ),
         outline: cn(
           "bg-[var(--bg-1)] text-[var(--fg-1)] border-[var(--fg-1)]",
-          "shadow-[4px_4px_0_0_rgba(245,241,234,0.85)]",
-          "hover:bg-[var(--bg-2)] hover:shadow-[5px_5px_0_0_var(--fg-1)]",
+          "hover:bg-[var(--bg-2)]",
           "hover:-translate-x-px hover:-translate-y-px",
-          "active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
+          "active:translate-x-[4px] active:translate-y-[4px]"
         ),
         secondary: cn(
           "bg-[var(--bg-2)] text-[var(--fg-1)] border-[var(--border-2)]",
@@ -43,10 +41,9 @@ const buttonVariants = cva(
         ),
         destructive: cn(
           "bg-[var(--bg-1)] text-[var(--term-red)] border-[var(--term-red)]",
-          "shadow-[4px_4px_0_0_#8c2520]",
-          "hover:bg-[#1a0f0e] hover:shadow-[5px_5px_0_0_#8c2520]",
+          "hover:bg-[#1a0f0e]",
           "hover:-translate-x-px hover:-translate-y-px",
-          "active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
+          "active:translate-x-[4px] active:translate-y-[4px]"
         ),
         link: cn(
           "bg-transparent border-transparent text-[var(--bf-orange)] underline-offset-4",
@@ -67,8 +64,7 @@ const buttonVariants = cva(
         variant: "default",
         size: "lg",
         className: cn(
-          "shadow-[6px_6px_0_0_var(--bf-orange-deep)]",
-          "hover:shadow-[7px_7px_0_0_var(--bf-orange-deep),0_0_28px_rgba(255,107,26,0.4)]",
+          "hover:shadow-[0_0_28px_rgba(255,107,26,0.4)]",
           "active:translate-x-[6px] active:translate-y-[6px]"
         ),
       },
@@ -76,28 +72,19 @@ const buttonVariants = cva(
         variant: "default",
         size: "sm",
         className: cn(
-          "shadow-[3px_3px_0_0_var(--bf-orange-deep)]",
-          "hover:shadow-[4px_4px_0_0_var(--bf-orange-deep),0_0_14px_rgba(255,107,26,0.3)]",
+          "hover:shadow-[0_0_14px_rgba(255,107,26,0.3)]",
           "active:translate-x-[3px] active:translate-y-[3px]"
         ),
       },
       {
         variant: "outline",
         size: "lg",
-        className: cn(
-          "shadow-[6px_6px_0_0_rgba(245,241,234,0.85)]",
-          "hover:shadow-[7px_7px_0_0_var(--fg-1)]",
-          "active:translate-x-[6px] active:translate-y-[6px]"
-        ),
+        className: "active:translate-x-[6px] active:translate-y-[6px]",
       },
       {
         variant: "outline",
         size: "sm",
-        className: cn(
-          "shadow-[3px_3px_0_0_rgba(245,241,234,0.85)]",
-          "hover:shadow-[4px_4px_0_0_var(--fg-1)]",
-          "active:translate-x-[3px] active:translate-y-[3px]"
-        ),
+        className: "active:translate-x-[3px] active:translate-y-[3px]",
       },
     ],
     defaultVariants: {

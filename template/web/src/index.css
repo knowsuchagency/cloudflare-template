@@ -297,3 +297,83 @@
 @utility shadow-brutal-ink {
   box-shadow: 4px 4px 0 0 rgba(245, 241, 234, 0.85);
 }
+
+@layer components {
+  [data-slot="button"]:where(
+      [data-variant="default"],
+      [data-variant="outline"],
+      [data-variant="destructive"]
+    ) {
+    --btn-brutal-offset: 4px;
+    position: relative;
+  }
+
+  [data-slot="button"][data-variant="default"] {
+    --btn-brutal-color: var(--bf-orange-deep);
+  }
+  [data-slot="button"][data-variant="outline"] {
+    --btn-brutal-color: rgba(245, 241, 234, 0.85);
+    --btn-brutal-color-hover: var(--fg-1);
+  }
+  [data-slot="button"][data-variant="destructive"] {
+    --btn-brutal-color: #8c2520;
+  }
+
+  [data-slot="button"]:where([data-variant="default"], [data-variant="outline"])[data-size="sm"] {
+    --btn-brutal-offset: 3px;
+  }
+  [data-slot="button"]:where([data-variant="default"], [data-variant="outline"])[data-size="lg"] {
+    --btn-brutal-offset: 6px;
+  }
+
+  [data-slot="button"]:where(
+      [data-variant="default"],
+      [data-variant="outline"],
+      [data-variant="destructive"]
+    )::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    border-right-color: var(--btn-brutal-color);
+    border-bottom-color: var(--btn-brutal-color);
+    transform: translate(var(--btn-brutal-offset), var(--btn-brutal-offset));
+    pointer-events: none;
+    transition:
+      transform var(--dur-fast) var(--ease-out),
+      opacity var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out);
+  }
+
+  [data-slot="button"]:where(
+      [data-variant="default"],
+      [data-variant="outline"],
+      [data-variant="destructive"]
+    ):hover::after {
+    transform: translate(
+      calc(var(--btn-brutal-offset) + 1px),
+      calc(var(--btn-brutal-offset) + 1px)
+    );
+    border-right-color: var(--btn-brutal-color-hover, var(--btn-brutal-color));
+    border-bottom-color: var(--btn-brutal-color-hover, var(--btn-brutal-color));
+  }
+
+  [data-slot="button"]:where(
+      [data-variant="default"],
+      [data-variant="outline"],
+      [data-variant="destructive"]
+    ):active::after,
+  [data-slot="button"]:where(
+      [data-variant="default"],
+      [data-variant="outline"],
+      [data-variant="destructive"]
+    ):disabled::after,
+  [data-slot="button"]:where(
+      [data-variant="default"],
+      [data-variant="outline"],
+      [data-variant="destructive"]
+    )[aria-disabled="true"]::after {
+    opacity: 0;
+  }
+}
