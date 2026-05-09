@@ -30,12 +30,26 @@
     // deriveTrustedOrigins() infer the same wildcard automatically).
     "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %}
   },
-  // Branch deploys (anything that isn't `main`) ship as versions of a separate
-  // Worker `{{ worker_name }}-preview` with its own D1, so schema changes can
-  // be exercised end-to-end without touching production data. Workers Builds
-  // invokes `wrangler versions upload --env preview` for the preview trigger.
-  // d1_databases / vars are non-inheritable — every binding the preview worker
-  // uses must be redeclared here.
+  // The `env.preview` block below defines a STANDALONE preview Worker
+  // `{{ worker_name }}-preview` with its own `{{ d1_database_name }}-preview`
+  // D1, reachable ONLY via a manual `wrangler deploy --env preview` from a
+  // workstation (e.g. `mise run deploy:preview`) — useful for end-to-end
+  // testing of breaking schema changes against disposable data.
+  //
+  // **Workers Builds (push-to-deploy) does NOT use this block.** Workers
+  // Builds is connected per-Worker — its triggers can only upload versions
+  // to `{{ worker_name }}` (the connected Worker), not to a sibling Worker
+  // like `{{ worker_name }}-preview`, regardless of `--env` or `--name`
+  // flags. So PR-branch builds get versions of the prod Worker bound to
+  // the *top-level* config (DB → `{{ d1_database_name }}`, etc.). Schema
+  // and binding changes in PRs MUST be forward-compatible with the live
+  // prod resources, or use a two-PR sequence (migration first, feature
+  // second) so the prod D1 is upgraded by the first merge before the
+  // feature code runs against it. See `mise.toml` → `tasks.builds:connect`
+  // for the full rationale.
+  //
+  // d1_databases / vars are non-inheritable — every binding the standalone
+  // preview Worker uses must be redeclared here.
   "env": {
     "preview": {
       "name": "{{ worker_name }}-preview",
