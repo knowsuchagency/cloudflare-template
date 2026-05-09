@@ -691,7 +691,7 @@ fi
 '''
 
 [tasks."builds:connect"]
-description = "Wire Cloudflare Workers Builds to origin's GitHub repo — repo connection + main (deploy) + preview (versions upload) triggers (idempotent)"
+description = "Wire Cloudflare Workers Builds to origin's GitHub repo — connects {{ worker_name }} (main → deploy) + {{ worker_name }}-preview (non-main → versions upload --env preview) so PR previews bind to {{ d1_database_name }}-preview, not prod (idempotent)"
 run = '''
 command -v jq >/dev/null 2>&1 || { echo "✗ builds:connect requires jq (https://jqlang.org)" >&2; exit 1; }
 command -v gh >/dev/null 2>&1 || { echo "✗ builds:connect requires the gh CLI (https://cli.github.com)" >&2; exit 1; }
@@ -709,7 +709,8 @@ else
 fi
 
 API=https://api.cloudflare.com/client/v4
-worker="{{ worker_name }}"
+prod_worker="{{ worker_name }}"
+preview_worker="{{ worker_name }}-preview"
 
 origin=$(git remote get-url origin 2>/dev/null || true)
 case "$origin" in
@@ -724,8 +725,13 @@ if [ -z "$acct" ]; then
 fi
 [ -n "$acct" ] || { echo "✗ could not determine CF account id (set CLOUDFLARE_ACCOUNT_ID)" >&2; exit 1; }
 
-tag=$(cfcurl "$API/accounts/$acct/workers/scripts" | jq -r --arg name "$worker" '.result[] | select(.id==$name) | .tag' | head -1)
-[ -n "$tag" ] || { echo "✗ worker '$worker' not found in account $acct — run 'mise deploy' first" >&2; exit 1; }
+# Resolve worker tags. The prod Worker MUST exist (initial `mise deploy`); the
+# preview Worker is optional — if absent we just hint at `mise run deploy:preview`
+# and skip the non-main trigger so the prod Worker doesn't get one.
+all_scripts=$(cfcurl "$API/accounts/$acct/workers/scripts")
+prod_tag=$(printf '%s' "$all_scripts" | jq -r --arg name "$prod_worker" '.result[] | select(.id==$name) | .tag' | head -1)
+preview_tag=$(printf '%s' "$all_scripts" | jq -r --arg name "$preview_worker" '.result[] | select(.id==$name) | .tag' | head -1)
+[ -n "$prod_tag" ] || { echo "✗ worker '$prod_worker' not found in account $acct — run 'mise deploy' first" >&2; exit 1; }
 
 repo_json=$(gh api "repos/$repo_slug")
 gh_rid=$(printf '%s' "$repo_json" | jq -r '.id')
@@ -735,7 +741,9 @@ gh_rname=$(printf '%s' "$repo_json" | jq -r '.name')
 gh_uid=$(printf '%s' "$repo_json" | jq -r '.owner.id')
 gh_uname=$(printf '%s' "$repo_json" | jq -r '.owner.login')
 
-echo "• Connecting $repo_slug → $worker..."
+# Repo-to-account connection is account-level (not per-Worker), so this is a
+# one-time setup shared by every Worker in the account.
+echo "• Connecting $repo_slug to account..."
 conn_body=$(jq -n --arg pid "$gh_uid" --arg pname "$gh_uname" --arg rid "$gh_rid" --arg rname "$gh_rname" \
   '{provider_type:"github", provider_account_id:$pid, provider_account_name:$pname, repo_id:$rid, repo_name:$rname}')
 conn_resp=$(cfcurl -X PUT -H "Content-Type: application/json" "$API/accounts/$acct/builds/repos/connections" -d "$conn_body")
@@ -757,15 +765,21 @@ if [ -z "$tok" ]; then
   exit 1
 fi
 
-# List live triggers once so upsert_trigger can diff against declared intent.
-existing=$(cfcurl "$API/accounts/$acct/builds/workers/$tag/triggers")
-if ! printf '%s' "$existing" | jq -e '.success' >/dev/null; then
-  echo "✗ could not list existing triggers: $existing" >&2
-  exit 1
-fi
+# Trigger upsert keyed on (worker_tag, trigger_name). Each trigger is per-Worker
+# and `existing_triggers_for` is queried freshly per Worker so we diff against
+# the right set.
+existing_triggers_for() {
+  local tag="$1" resp
+  resp=$(cfcurl "$API/accounts/$acct/builds/workers/$tag/triggers")
+  if ! printf '%s' "$resp" | jq -e '.success' >/dev/null; then
+    echo "✗ could not list triggers for $tag: $resp" >&2
+    exit 1
+  fi
+  printf '%s' "$resp"
+}
 
 upsert_trigger() {
-  local name="$1" build_cmd="$2" deploy_cmd="$3" includes="$4" excludes="$5"
+  local tag="$1" existing="$2" name="$3" build_cmd="$4" deploy_cmd="$5" includes="$6" excludes="$7"
   local match existing_uuid body resp got_b got_d got_inc got_exc want_inc want_exc
 
   match=$(printf '%s' "$existing" | jq --arg name "$name" \
@@ -819,19 +833,70 @@ upsert_trigger() {
   fi
 }
 
+# Soft-delete a trigger by UUID (used to retire stale triggers from previous
+# incarnations of this task).
+delete_trigger() {
+  local uuid="$1" label="$2" resp
+  resp=$(cfcurl -X DELETE "$API/accounts/$acct/builds/triggers/$uuid")
+  if printf '%s' "$resp" | jq -e '.success' >/dev/null; then
+    echo "  ✓ deleted stale trigger $label"
+  else
+    echo "  ⚠ failed to delete stale trigger $label: $resp" >&2
+  fi
+}
+
 # `branch_includes: ["*"]` is only accepted alongside a non-empty `branch_excludes`.
 # That's the API shape for "all non-production branches" — it's how the dashboard
 # checkbox is implemented under the hood, not a separate is_production flag.
-# Workers Builds is connected per-Worker — every trigger configured on
-# {{ worker_name }} can only upload to {{ worker_name }} (not a sibling
-# Worker), regardless of `--env` or `--name` flags. So preview branches
-# upload versions of the prod Worker; the env.preview block in
-# wrangler.jsonc is ignored for these uploads. Schema/binding changes
-# in PRs need to be forward-compatible with the live prod resources.
-upsert_trigger "main"    "bun run ci:build"         "npx wrangler deploy"          '["main"]' '[]'
-upsert_trigger "preview" "bun run ci:build:preview" "npx wrangler versions upload" '["*"]'    '["main"]'
+#
+# ARCHITECTURE: Workers Builds connections are per-Worker. We connect both the
+# prod ({{ worker_name }}) and standalone preview ({{ worker_name }}-preview)
+# Workers to this repo, and split the triggers across them:
+#
+#   • main branch         → {{ worker_name }}         → wrangler deploy
+#   • all other branches  → {{ worker_name }}-preview → wrangler versions upload --env preview
+#
+# Putting the non-main trigger on {{ worker_name }}-preview (instead of
+# {{ worker_name }}) is the whole point: the `--env preview` block in
+# wrangler.jsonc binds DB to {{ d1_database_name }}-preview, the preview
+# crawl queue, etc. — so PR-branch traffic never touches prod data.
+# {{ worker_name }}-preview must already exist for the preview trigger to
+# land; bootstrap it with `mise run deploy:preview`.
+#
+# Earlier revisions of this task put the preview trigger on {{ worker_name }}
+# itself, so PR versions inherited prod bindings. Detect and remove that
+# legacy trigger if it's still around.
 
-echo "✓ Workers Builds ready — push to 'main' deploys; push to any other branch produces a preview URL commented on the PR."
+# ---- main trigger on the prod Worker ----
+echo "• Configuring triggers on $prod_worker..."
+prod_existing=$(existing_triggers_for "$prod_tag")
+upsert_trigger "$prod_tag" "$prod_existing" "main" "bun run ci:build" "npx wrangler deploy" '["main"]' '[]'
+
+# Retire any stale "preview" trigger on the prod Worker — it would've been
+# uploading versions of {{ worker_name }} (bound to prod D1) for non-main pushes.
+stale_preview=$(printf '%s' "$prod_existing" | jq -r '.result[] | select(.deleted_on==null and .trigger_name=="preview") | .trigger_uuid' | head -1)
+if [ -n "$stale_preview" ]; then
+  echo "  • Found legacy 'preview' trigger on $prod_worker — removing so PRs don't deploy as versions of prod"
+  delete_trigger "$stale_preview" "preview/$prod_worker"
+fi
+
+# ---- non-main trigger on the standalone preview Worker ----
+if [ -z "$preview_tag" ]; then
+  echo "• Skipping $preview_worker triggers — Worker not deployed yet"
+  echo "  Bootstrap with:"
+  echo "    mise run d1:create-preview"
+  echo "    mise run deploy:preview"
+  echo "    mise run secret:put-preview"
+  echo "  Then re-run \`mise run builds:connect\` to wire the preview trigger."
+else
+  echo "• Configuring triggers on $preview_worker..."
+  preview_existing=$(existing_triggers_for "$preview_tag")
+  upsert_trigger "$preview_tag" "$preview_existing" "preview" \
+    "bun run ci:build:preview" "npx wrangler versions upload --env preview" \
+    '["*"]' '["main"]'
+fi
+
+echo "✓ Workers Builds ready — push to 'main' deploys $prod_worker (prod); push to any other branch uploads a preview version of $preview_worker, bound to {{ d1_database_name }}-preview."
 '''
 
 [tasks."ci:local"]

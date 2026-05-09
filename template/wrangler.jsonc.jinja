@@ -30,26 +30,28 @@
     // deriveTrustedOrigins() infer the same wildcard automatically).
     "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %}
   },
-  // The `env.preview` block below defines a STANDALONE preview Worker
-  // `{{ worker_name }}-preview` with its own `{{ d1_database_name }}-preview`
-  // D1, reachable ONLY via a manual `wrangler deploy --env preview` from a
-  // workstation (e.g. `mise run deploy:preview`) — useful for end-to-end
-  // testing of breaking schema changes against disposable data.
+  // The `env.preview` block defines a separate `{{ worker_name }}-preview`
+  // Worker bound to its own `{{ d1_database_name }}-preview` D1, so
+  // PR-branch traffic never touches prod data.
   //
-  // **Workers Builds (push-to-deploy) does NOT use this block.** Workers
-  // Builds is connected per-Worker — its triggers can only upload versions
-  // to `{{ worker_name }}` (the connected Worker), not to a sibling Worker
-  // like `{{ worker_name }}-preview`, regardless of `--env` or `--name`
-  // flags. So PR-branch builds get versions of the prod Worker bound to
-  // the *top-level* config (DB → `{{ d1_database_name }}`, etc.). Schema
-  // and binding changes in PRs MUST be forward-compatible with the live
-  // prod resources, or use a two-PR sequence (migration first, feature
-  // second) so the prod D1 is upgraded by the first merge before the
-  // feature code runs against it. See `mise.toml` → `tasks.builds:connect`
-  // for the full rationale.
+  // Workers Builds wires both Workers to this repo (see `mise.toml` →
+  // `tasks.builds:connect`):
+  //   • main branch        → `{{ worker_name }}`         → `wrangler deploy`
+  //   • non-main branches  → `{{ worker_name }}-preview` → `wrangler versions upload --env preview`
   //
-  // d1_databases / vars are non-inheritable — every binding the standalone
-  // preview Worker uses must be redeclared here.
+  // Workers Builds connections are per-Worker — its triggers can only
+  // upload to the connected Worker. Putting the non-main trigger on
+  // `{{ worker_name }}-preview` (instead of on `{{ worker_name }}`) is
+  // what makes `--env preview` actually take effect, swapping in the
+  // bindings below. PR previews surface at version URLs of the preview
+  // Worker (`*.{{ worker_name }}-preview.<sub>.workers.dev`).
+  //
+  // d1_databases / vars are non-inheritable — every binding the preview
+  // Worker uses must be redeclared here.
+  //
+  // Bootstrap once with `mise run d1:create-preview &&
+  // mise run deploy:preview && mise run secret:put-preview` so the Worker
+  // exists before `mise run builds:connect` wires its non-main trigger.
   "env": {
     "preview": {
       "name": "{{ worker_name }}-preview",

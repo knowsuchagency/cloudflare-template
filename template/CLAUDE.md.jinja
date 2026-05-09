@@ -78,11 +78,11 @@ Remote D1 migrations apply automatically on push to `main` when Workers Builds i
 
 Ordering inside `ci:build`: install deps → build SPA → apply D1 migrations → (Workers Builds then runs `wrangler deploy`). D1 lands before the Worker, so migrations must stay forward-compatible with the currently-deployed Worker — destructive schema changes require two pushes (first push: code tolerating both schemas; second push: the drop).
 
-Non-production branches run `ci:build:preview`, which uploads a *version* of the production `{{ worker_name }}` Worker via `wrangler versions upload`. **Workers Builds is connected per-Worker** — its triggers can only upload to `{{ worker_name }}` (the connected Worker), not to a sibling Worker like `{{ worker_name }}-preview`, regardless of `--env` or `--name` flags. So PR-branch previews inherit the **top-level** bindings (`DB` → `{{ d1_database_name }}` = prod). The `env.preview` block in `wrangler.jsonc` is *not* used by Workers Builds — it only applies to a manual `wrangler deploy --env preview` from a workstation (`mise run deploy:preview`), which produces the standalone `{{ worker_name }}-preview` Worker.
+Non-production branches run `ci:build:preview` and upload a *version* of the standalone `{{ worker_name }}-preview` Worker via `wrangler versions upload --env preview`. `mise run builds:connect` wires that trigger on `{{ worker_name }}-preview` (not on `{{ worker_name }}`) precisely so the `--env preview` block in `wrangler.jsonc` takes effect — Workers Builds connections are per-Worker, so a trigger on `{{ worker_name }}-preview` is the only way to land a PR-branch deploy on the preview Worker with its preview-DB binding.
 
-> **Forward-compat rule:** because PR previews run against PROD D1, any schema or binding change a PR introduces must be forward-compatible with the live prod resources. Drizzle's `findFirst`/relation queries tolerate missing columns on read (they come back as `undefined`), but as soon as the PR's code *writes* (INSERT/UPDATE) referencing a column that prod D1 doesn't have, that request fails with `D1_ERROR: no such column: ...`. For non-forward-compatible additions, ship a two-PR sequence: schema-only PR first (adds the migration, no code that uses the new columns), let `main`'s `ci:build` apply it to prod, then ship the feature PR. For destructive drops, the inverse: tolerant Worker first, schema drop second.
+> **Forward-compat rule still applies — but to the preview DB.** Every non-main branch shares `{{ d1_database_name }}-preview`, so the first preview deploy of any branch applies its migrations to that shared DB. If two branches' migrations conflict, drop `d1_migrations` on `{{ d1_database_name }}-preview` and re-run `mise run migrate:remote-preview`. Destructive drops still need the two-pushes pattern (tolerant Worker first, drop second), against either D1.
 
-`ci:build:preview` *does* run `db:migrate:remote:preview`, which migrates `{{ d1_database_name }}-preview` for the manual `mise run deploy:preview` workflow. That migration step is not what makes the PR preview URL work — Workers Builds' versions of `{{ worker_name }}` never bind to the preview DB.
+The preview Worker (`{{ worker_name }}-preview`) has to exist before `mise run builds:connect` can wire its trigger. Bootstrap with `mise run d1:create-preview && mise run deploy:preview && mise run secret:put-preview`, then re-run `mise run builds:connect`. The task is idempotent and skips the preview trigger gracefully if the Worker isn't there yet.
 
 `better-auth.config.ts` uses an in-memory `better-sqlite3` DB because the CLI doesn't need a real connection to emit drizzle table definitions — only the adapter shape.
 
@@ -135,8 +135,10 @@ mise run builds:connect
 
 Idempotently calls the Cloudflare API to attach this repo to `{{ worker_name }}` and create two triggers:
 
-- `main` → `bun run ci:build` → `wrangler deploy` (production)
-- all other branches → `bun run ci:build:preview` → `wrangler versions upload` (a *version* of the same `{{ worker_name }}` Worker — does NOT replace production traffic, but inherits all of prod's bindings; see "Preview environment" below for why this can't target the sibling `{{ worker_name }}-preview` Worker)
+- `main` → `bun run ci:build` → `wrangler deploy` (production, on `{{ worker_name }}`)
+- all other branches → `bun run ci:build:preview` → `wrangler versions upload --env preview` (a *version* of `{{ worker_name }}-preview`, bound to `{{ d1_database_name }}-preview`)
+
+Two Workers, one repo. The trigger split is required because Workers Builds connections are per-Worker — see "Preview environment" below.
 
 One-time prerequisite: install the [Cloudflare Workers & Pages GitHub App](https://github.com/apps/cloudflare-workers-and-pages) on the repo's owner. The task detects an unauthorized app and prints the install link.
 
@@ -161,11 +163,14 @@ Workers Builds auto-comments both on the PR.
 
 ## Preview environment
 
-`wrangler.jsonc` declares an `env.preview` block that defines a STANDALONE preview Worker (`{{ worker_name }}-preview`) bound to its own `{{ d1_database_name }}-preview` D1 (and a preview `BETTER_AUTH_URL`). It exists for **manual** end-to-end testing of breaking schema or binding changes against disposable data — reach it via `mise run deploy:preview` from a workstation, which runs `wrangler deploy --env preview`.
+`wrangler.jsonc` declares an `env.preview` block that defines a separate preview Worker (`{{ worker_name }}-preview`) bound to its own `{{ d1_database_name }}-preview` D1 (and a preview `BETTER_AUTH_URL`). It is reached two ways:
 
-> **`env.preview` is NOT what serves PR preview URLs from Workers Builds.** Workers Builds is connected per-Worker — its triggers can only upload versions to the connected Worker (`{{ worker_name }}`), not to `{{ worker_name }}-preview`, regardless of `--env preview` or `--name` flags. PR-branch builds therefore upload versions of `{{ worker_name }}` and inherit the **top-level** bindings (DB → `{{ d1_database_name }}`, all top-level vars). The preview URLs Workers Builds comments on PRs (`<version>-{{ worker_name }}.<sub>.workers.dev` etc.) are versions of the production Worker. Schema and binding changes a PR introduces must be forward-compatible with prod resources, or use the two-PR pattern (migration-only PR first, feature PR second).
+1. **Push-to-deploy via Workers Builds** — `mise run builds:connect` wires the non-main trigger on `{{ worker_name }}-preview`, so PR-branch pushes upload versions of the preview Worker via `wrangler versions upload --env preview`. PR previews surface at `<version>-{{ worker_name }}-preview.<subdomain>.workers.dev` and are auto-commented by Workers Builds. PR-branch traffic binds to `{{ d1_database_name }}-preview`, never to prod D1.
+2. **Manual workstation deploys** — `mise run deploy:preview` runs `wrangler deploy --env preview` for ad-hoc end-to-end testing without going through CI.
 
-Per-PR isolation is **not** provided. The standalone `env.preview` Worker is a single shared resource — any developer who runs `mise run deploy:preview` redeploys it. If a PR's migrations conflict with what's already on `{{ d1_database_name }}-preview`, drop the `d1_migrations` table on it and re-run `mise run migrate:remote-preview`. For full per-PR isolation you'd switch to a per-PR Worker pattern (separate `--name` per PR) and ephemeral D1 creation, which is a much larger lift and not what this template provisions.
+Workers Builds connections are per-Worker — every trigger configured on a Worker can only upload to that Worker, regardless of `--env` or `--name` flags. The split (`main` trigger on `{{ worker_name }}`, non-main trigger on `{{ worker_name }}-preview`) is what makes the `--env preview` upload actually take effect; configuring the non-main trigger on the prod Worker would silently inherit the top-level config and bind PR traffic to prod D1.
+
+Per-PR isolation is **not** provided. Every non-main branch shares the same preview Worker and the same preview DB. The first preview deploy of any branch applies that branch's migrations to the shared DB; if a later branch's migrations conflict, drop the `d1_migrations` table on the preview DB and re-run `mise run migrate:remote-preview`. For full per-PR isolation you'd switch to a per-PR Worker pattern (separate `--name` per PR) and ephemeral D1 creation, which is a much larger lift and not what this template provisions.
 
 Bootstrap, in order:
 
