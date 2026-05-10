@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 {{ app_title }} — generated from the [cloudflare-better-auth-d1 copier template](https://copier.readthedocs.io/). Adapts the [Hono + Better Auth](https://hono.dev/examples/better-auth-on-cloudflare) recipe to use **Cloudflare D1** instead of Neon. One Cloudflare Worker serves both the Better Auth API and a Vite React SPA.
 
+## Project conventions
+
+Project-wide rules — loading states, context menus on CRUDable cards, end-to-end tests on full-stack features — are kept in a sibling file so they read cleanly outside Claude Code (PR review, GitHub UI):
+
+@GUIDELINES.md
+
 ## Layout
 
 ```
