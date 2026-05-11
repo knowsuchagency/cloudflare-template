@@ -56,12 +56,29 @@ jobs:
         with:
           bun-version: 1.3.3
 
+      # bun 1.3.x reports process.versions.node = 20.x, and wrangler 4.x
+      # requires >=22 — without a real node 22 here, `wrangler delete` exits
+      # before doing anything and the `|| echo` fallback below would mask it.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Delete preview Worker
         run: |
+          set +e
           PREVIEW_NAME="${WORKER_NAME}-pr-${PR_NUMBER}"
           echo "Deleting $PREVIEW_NAME ..."
-          bunx wrangler delete --name "$PREVIEW_NAME" --force || \
-            echo "Worker $PREVIEW_NAME not found (already deleted) — continuing."
+          out=$(bunx wrangler delete --name "$PREVIEW_NAME" --force 2>&1)
+          status=$?
+          printf '%s\n' "$out"
+          if [ $status -ne 0 ]; then
+            if printf '%s' "$out" | grep -qiE 'script not found|workers.api.error.script_not_found|10007'; then
+              echo "Worker $PREVIEW_NAME already gone — continuing."
+              exit 0
+            fi
+            echo "::error::wrangler delete failed for $PREVIEW_NAME" >&2
+            exit $status
+          fi
 
       - name: Find preview comment
         uses: peter-evans/find-comment@v3

@@ -74,12 +74,57 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
+      # wrangler invokes itself under `node` (its bin has a node shebang), so
+      # the runner's Node version controls whether wrangler runs at all —
+      # wrangler 4 requires Node ≥ 22, while ubuntu-latest defaults to 20.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.3
 
-      - name: Build (no migrations — preview shares production D1)
-        run: bun run ci:build:preview
+      # PR Workers share the production D1 (per CLAUDE.md: schema changes must
+      # stay forward-compatible until merge), so we deliberately do NOT run
+      # `ci:build:preview` here — that script applies migrations against the
+      # separate `talkbuilder-db-preview` D1, which is reserved for the
+      # standalone preview Worker. Inlined steps below: install, SPA build,
+      # tests. No migrations.
+      - name: Install dependencies
+        run: |
+          bun install
+          bun install --cwd web
+
+      - name: Build SPA
+        run: cd web && bun run build
+
+      - name: Run tests
+        run: bun run test
+
+      # Cloudflare Workflows names are account-scoped: two per-PR Workers
+      # binding "scan-workflow" share the *latest-deployed* workflow class
+      # definition, so a sibling PR's deploy can silently swap the workflow
+      # code on this PR's Worker. Suffix the workflow name(s) with the PR
+      # number before deploy so each Worker owns its own workflow class.
+      - name: Suffix workflow names with PR number
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "wrangler.jsonc";
+            const src = fs.readFileSync(path, "utf8");
+            // Preserve comments — only rewrite string literals on workflow name lines.
+            const out = src.replace(
+              /("workflows"\s*:\s*\[[\s\S]*?\])/g,
+              (block) => block.replace(
+                /("name"\s*:\s*")([^"]+)(")/g,
+                (_, a, name, c) => a + name + "-pr-" + process.env.PR_NUMBER + c,
+              ),
+            );
+            fs.writeFileSync(path, out);
+            console.log("workflow names suffixed with -pr-" + process.env.PR_NUMBER);
+          '
+          grep -A1 '"workflows"' wrangler.jsonc | head -10
 
       - name: Deploy preview Worker and capture URL
         id: deploy
