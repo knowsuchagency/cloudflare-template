@@ -1,4 +1,3 @@
-import { Github } from "lucide-react"
 import { Link } from "react-router"
 
 import { Button } from "@/components/ui/button"
@@ -6,39 +5,40 @@ import { Wordmark } from "@/components/marketing/wordmark"
 
 export function Nav() {
   return (
-    <nav className="flex items-center justify-between py-7">
+    <nav className="flex items-center justify-between border-b border-[var(--ink)] py-5">
       <Link to="/" className="no-underline">
         <Wordmark text="{{ app_title }}" size="md" />
       </Link>
 
-      <div className="flex items-center gap-8 text-sm">
+      <div className="flex items-center gap-5 font-mono text-[11px] tracking-[0.08em] uppercase">
         <a
           href="#features"
-          className="text-[var(--fg-1)] no-underline transition-colors duration-[80ms] hover:text-[var(--bf-orange)]"
+          className="text-[var(--ink)] no-underline transition-colors duration-[120ms] hover:text-[var(--orange)]"
         >
-          Features
+          FEATURES
         </a>
+        <span aria-hidden className="text-[var(--ink-ghost)]">·</span>
         <a
           href="#"
-          className="text-[var(--fg-1)] no-underline transition-colors duration-[80ms] hover:text-[var(--bf-orange)]"
+          className="text-[var(--ink)] no-underline transition-colors duration-[120ms] hover:text-[var(--orange)]"
         >
-          Docs
+          DOCS
         </a>
+        <span aria-hidden className="text-[var(--ink-ghost)]">·</span>
         <a
           href="https://github.com"
           target="_blank"
           rel="noreferrer"
-          aria-label="GitHub"
-          className="text-[var(--fg-1)] transition-colors duration-[80ms] hover:text-[var(--bf-orange)]"
+          className="text-[var(--ink)] no-underline transition-colors duration-[120ms] hover:text-[var(--orange)]"
         >
-          <Github className="size-[18px]" />
+          GITHUB
         </a>
         <Button variant="outline" size="sm" asChild>
-          <Link to="/login">Sign in</Link>
+          <Link to="/login">SIGN IN</Link>
         </Button>
-        <Button size="sm" asChild>
+        <Button variant="accent" size="sm" asChild>
           <Link to="/signup">
-            Sign up <span aria-hidden>&rarr;</span>
+            SIGN UP <span aria-hidden>→</span>
           </Link>
         </Button>
       </div>

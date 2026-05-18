@@ -5,13 +5,13 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const BTN_TRANSITION =
-  "transition-[transform,box-shadow,background-color,color,border-color] duration-[80ms] ease-[cubic-bezier(0.2,0.7,0.3,1)]"
+  "transition-[background-color,color,border-color] duration-[120ms] ease-[cubic-bezier(0.2,0.7,0.1,1)]"
 
 const buttonVariants = cva(
   cn(
-    "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-none border-2 border-transparent font-sans font-semibold whitespace-nowrap select-none outline-none",
+    "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-none border border-transparent font-mono uppercase tracking-[0.08em] whitespace-nowrap select-none outline-none",
     BTN_TRANSITION,
-    "focus-visible:ring-2 focus-visible:ring-[var(--bf-orange)]/60 focus-visible:ring-offset-0",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--orange)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper)]",
     "disabled:pointer-events-none disabled:opacity-50",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
   ),
@@ -19,74 +19,44 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: cn(
-          "bg-[var(--bf-orange)] text-[#0a0908] border-[var(--bf-orange)]",
-          "hover:bg-[var(--bf-orange-hot)] hover:border-[var(--bf-orange-hot)]",
-          "hover:shadow-[0_0_22px_rgba(255,107,26,0.35)]",
-          "hover:-translate-x-px hover:-translate-y-px",
-          "active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
+          "bg-[var(--ink)] text-[var(--paper-0)] border-[var(--ink)]",
+          "hover:bg-[var(--orange)] hover:border-[var(--orange)]"
+        ),
+        accent: cn(
+          "bg-[var(--orange)] text-[var(--paper-0)] border-[var(--orange)]",
+          "hover:bg-[var(--orange-deep)] hover:border-[var(--orange-deep)]"
         ),
         outline: cn(
-          "bg-[var(--bg-1)] text-[var(--fg-1)] border-[var(--fg-1)]",
-          "hover:bg-[var(--bg-2)]",
-          "hover:-translate-x-px hover:-translate-y-px",
-          "active:translate-x-[4px] active:translate-y-[4px]"
+          "bg-transparent text-[var(--ink)] border-[var(--ink)]",
+          "hover:bg-[var(--ink)] hover:text-[var(--paper-0)]"
         ),
         secondary: cn(
-          "bg-[var(--bg-2)] text-[var(--fg-1)] border-[var(--border-2)]",
-          "hover:bg-[var(--bg-3)] hover:border-[var(--border-3)]"
+          "bg-[var(--paper-1)] text-[var(--ink)] border-[var(--paper-1)]",
+          "hover:bg-[var(--paper-2)] hover:border-[var(--paper-2)]"
         ),
         ghost: cn(
-          "bg-transparent text-[var(--fg-2)] border-transparent",
-          "hover:bg-[var(--bg-2)] hover:text-[var(--fg-1)]"
+          "bg-transparent text-[var(--ink-2)] border-transparent",
+          "hover:bg-[var(--paper-1)] hover:text-[var(--ink)]"
         ),
         destructive: cn(
-          "bg-[var(--bg-1)] text-[var(--term-red)] border-[var(--term-red)]",
-          "hover:bg-[#1a0f0e]",
-          "hover:-translate-x-px hover:-translate-y-px",
-          "active:translate-x-[4px] active:translate-y-[4px]"
+          "bg-transparent text-[var(--signal-red)] border-[var(--signal-red)]",
+          "hover:bg-[var(--signal-red)] hover:text-[var(--paper-0)]"
         ),
         link: cn(
-          "bg-transparent border-transparent text-[var(--bf-orange)] underline-offset-4",
+          "bg-transparent border-transparent text-[var(--orange)] underline-offset-4 normal-case tracking-normal font-sans",
           "hover:underline"
         ),
       },
       size: {
-        default: "h-10 px-5 text-sm has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
-        sm: "h-8 px-3 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-12 px-6 text-[15px] has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
+        default:
+          "h-10 px-5 text-xs has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        sm: "h-8 px-3 text-[10px] has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-12 px-6 text-sm has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
         icon: "size-10",
         "icon-sm": "size-8 [&_svg:not([class*='size-'])]:size-3.5",
         "icon-lg": "size-12",
       },
     },
-    compoundVariants: [
-      {
-        variant: "default",
-        size: "lg",
-        className: cn(
-          "hover:shadow-[0_0_28px_rgba(255,107,26,0.4)]",
-          "active:translate-x-[6px] active:translate-y-[6px]"
-        ),
-      },
-      {
-        variant: "default",
-        size: "sm",
-        className: cn(
-          "hover:shadow-[0_0_14px_rgba(255,107,26,0.3)]",
-          "active:translate-x-[3px] active:translate-y-[3px]"
-        ),
-      },
-      {
-        variant: "outline",
-        size: "lg",
-        className: "active:translate-x-[6px] active:translate-y-[6px]",
-      },
-      {
-        variant: "outline",
-        size: "sm",
-        className: "active:translate-x-[3px] active:translate-y-[3px]",
-      },
-    ],
     defaultVariants: {
       variant: "default",
       size: "default",

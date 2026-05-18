@@ -1,91 +1,103 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/ibm-plex-sans";
+@import "@fontsource-variable/archivo";
+@import "@fontsource/archivo-narrow/400.css";
+@import "@fontsource/archivo-narrow/700.css";
 @import "@fontsource-variable/jetbrains-mono";
+@import url("https://fonts.googleapis.com/css2?family=Workbench:BLED,SCAN@-50..100,-50..50&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
 /* =============================================================
-   BITFORGE DESIGN SYSTEM TOKENS
-   Neobrutalist, monospace, single orange accent on warm near-black.
+   APEX DESIGN SYSTEM TOKENS
+   Industrial AI-operations brand. Warm paper, near-black ink,
+   vermilion-orange accent. Hard edges, monospace metadata.
    ============================================================= */
 :root {
-  /* SURFACES — dark canonical */
-  --bg-0: #0a0908;
-  --bg-1: #121110;
-  --bg-2: #1a1816;
-  --bg-3: #232120;
+  /* PAPER — warm, never pure white */
+  --paper-0: #f2f0eb;
+  --paper: #e9e7e2;
+  --paper-1: #dedcd6;
+  --paper-2: #c9c7c2;
 
-  /* SURFACES — paper (reserved for docs/diagrams) */
-  --paper-0: #f2eee4;
-  --paper-1: #eae5d8;
-  --paper-2: #dcd6c5;
-  --paper-grid: rgba(10, 9, 8, 0.06);
-  --ink-1: #0a0908;
-  --ink-2: #2d2a26;
-  --ink-3: #6e6a63;
+  /* INK — near-black, never pure black */
+  --ink: #111111;
+  --ink-2: #2a2a2a;
+  --ink-3: #5c5c5a;
+  --ink-ghost: #aba9a3;
 
-  /* FOREGROUND on dark */
-  --fg-1: #f5f1ea;
-  --fg-2: #b8b2a7;
-  --fg-3: #6e6a63;
-  --fg-4: #3a3833;
+  /* BRAND — vermilion */
+  --orange: #ee5314;
+  --orange-deep: #c8420c;
+  --orange-tint: #f38256;
 
-  /* BORDERS */
-  --border-1: #2a2825;
-  --border-2: #3d3a36;
-  --border-3: #524e48;
+  /* SIGNAL — used sparingly for status */
+  --signal-red: #d42018;
+  --signal-amber: #e8a317;
+  --signal-green: #2e7d32;
+  --signal-blue: #0f4c81;
 
-  /* BRAND — the orange */
-  --bf-orange: #ff6b1a;
-  --bf-orange-hot: #ff8533;
-  --bf-orange-deep: #d9520a;
-  --bf-orange-dim: #7a3410;
+  /* SURFACE ALIASES — codebase consumes these names directly. */
+  --bg-0: var(--paper);
+  --bg-1: var(--paper-0);
+  --bg-2: var(--paper-1);
+  --bg-3: var(--paper-2);
 
-  /* SEMANTIC — terminal palette */
-  --term-green: #2ee6a8;
-  --term-green-dim: #1a8c66;
-  --term-amber: #f2b33d;
-  --term-red: #ff5a5a;
-  --term-blue: #5ab0ff;
-  --term-purple: #c78bff;
-  --term-cyan: #4fd8e0;
+  /* FOREGROUND ALIASES */
+  --fg-1: var(--ink);
+  --fg-2: var(--ink-2);
+  --fg-3: var(--ink-3);
+  --fg-4: var(--ink-ghost);
 
-  /* MAC TRAFFIC LIGHTS */
-  --tl-red: #ff5f57;
-  --tl-amber: #febc2e;
-  --tl-green: #28c840;
+  /* BORDERS — apex rule: ink hairlines, not gray */
+  --border-1: var(--ink);
+  --border-2: var(--ink-2);
+  --border-3: var(--paper-2);
+
+  /* BACK-COMPAT — bitforge naming kept as aliases so existing
+     component files compile without edits. New code should use the
+     canonical apex names above. */
+  --bf-orange: var(--orange);
+  --bf-orange-hot: var(--orange-tint);
+  --bf-orange-deep: var(--orange-deep);
+  --term-red: var(--signal-red);
+  --term-amber: var(--signal-amber);
+  --term-green: var(--signal-green);
+  --term-blue: var(--signal-blue);
 
   /* TYPE STACKS */
+  --font-sans: "Archivo Variable", "Archivo", "Helvetica Neue", Helvetica,
+    Arial, sans-serif;
+  --font-condensed: "Archivo Narrow", "Archivo", "Helvetica Neue Condensed",
+    sans-serif;
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "SF Mono", "Menlo",
     "Consolas", monospace;
-  --font-pixel: "Departure Mono", "JetBrains Mono Variable", "JetBrains Mono",
+  --font-pixel: "Workbench", "JetBrains Mono Variable", "JetBrains Mono",
     monospace;
-  --font-sans: "IBM Plex Sans Variable", "IBM Plex Sans", "Inter", system-ui,
-    sans-serif;
+  --font-dot: var(--font-pixel);
 
-  /* TYPE SCALE — multiples of 4 */
+  /* TYPE SCALE — apex multiples */
   --fs-xs: 11px;
   --fs-sm: 13px;
   --fs-base: 15px;
   --fs-md: 17px;
-  --fs-lg: 20px;
-  --fs-xl: 24px;
-  --fs-2xl: 32px;
-  --fs-3xl: 44px;
-  --fs-4xl: 64px;
-  --fs-5xl: 96px;
+  --fs-lg: 22px;
+  --fs-xl: 32px;
+  --fs-2xl: 48px;
+  --fs-3xl: 72px;
+  --fs-4xl: 112px;
+  --fs-mega: 168px;
 
-  --lh-tight: 1.1;
-  --lh-snug: 1.25;
-  --lh-base: 1.5;
-  --lh-loose: 1.7;
+  --lh-tight: 0.92;
+  --lh-snug: 1.2;
+  --lh-base: 1.45;
+  --lh-loose: 1.6;
 
   --tracking-tight: -0.02em;
   --tracking-base: 0;
-  --tracking-wide: 0.05em;
-  --tracking-wider: 0.12em;
+  --tracking-wide: 0.08em;
+  --tracking-mono: 0.04em;
 
   /* SPACING — 4px grid */
   --s-0: 0px;
@@ -102,76 +114,82 @@
   --s-20: 80px;
   --s-24: 96px;
 
-  /* RADIUS — hard edges are the brand */
+  /* RADIUS — apex is hard-edged */
   --radius: 0;
   --r-0: 0px;
   --r-1: 2px;
   --r-2: 4px;
-  --r-3: 6px;
   --r-pill: 9999px;
 
-  /* BORDERS */
+  /* BORDER WIDTHS */
   --bw-1: 1px;
   --bw-2: 2px;
-  --bw-3: 3px;
-
-  /* SHADOWS — neobrutalist hard offsets + dark glows */
-  --shadow-brutal-sm: 4px 4px 0 0 var(--ink-1);
-  --shadow-brutal: 6px 6px 0 0 var(--ink-1);
-  --shadow-brutal-lg: 10px 10px 0 0 var(--ink-1);
-  --shadow-brutal-orange: 6px 6px 0 0 var(--bf-orange);
-  --glow-orange: 0 0 24px rgba(255, 107, 26, 0.35);
-  --glow-green: 0 0 16px rgba(46, 230, 168, 0.4);
-  --glow-soft: 0 8px 32px rgba(0, 0, 0, 0.5);
 
   /* MOTION — snappy, no bounces */
-  --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
-  --ease-in: cubic-bezier(0.7, 0, 0.8, 0.3);
-  --ease-step: steps(4, end);
-  --dur-fast: 80ms;
-  --dur-base: 160ms;
-  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --ease-in: cubic-bezier(0.6, 0, 0.8, 0.3);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 400ms;
 
-  /* SHADCN SEMANTIC ALIASES — drive shadcn utilities through Bitforge tokens */
-  --background: var(--bg-0);
-  --foreground: var(--fg-1);
-  --card: var(--bg-1);
-  --card-foreground: var(--fg-1);
-  --popover: var(--bg-1);
-  --popover-foreground: var(--fg-1);
-  --primary: var(--bf-orange);
-  --primary-foreground: #0a0908;
-  --secondary: var(--bg-2);
-  --secondary-foreground: var(--fg-1);
-  --muted: var(--bg-2);
-  --muted-foreground: var(--fg-3);
-  --accent: var(--bg-2);
-  --accent-foreground: var(--fg-1);
-  --destructive: var(--term-red);
-  --border: var(--border-1);
-  --input: var(--border-1);
-  --ring: var(--bf-orange);
-  --chart-1: var(--bf-orange);
-  --chart-2: var(--term-green);
-  --chart-3: var(--term-blue);
-  --chart-4: var(--term-purple);
-  --chart-5: var(--term-amber);
-  --sidebar: var(--bg-1);
-  --sidebar-foreground: var(--fg-1);
-  --sidebar-primary: var(--bf-orange);
-  --sidebar-primary-foreground: #0a0908;
-  --sidebar-accent: var(--bg-2);
-  --sidebar-accent-foreground: var(--fg-1);
-  --sidebar-border: var(--border-1);
-  --sidebar-ring: var(--bf-orange);
+  /* SHADCN SEMANTIC ALIASES — drive shadcn utilities through Apex tokens */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper-0);
+  --card-foreground: var(--ink);
+  --popover: var(--paper-0);
+  --popover-foreground: var(--ink);
+  --primary: var(--orange);
+  --primary-foreground: var(--paper-0);
+  --secondary: var(--paper-1);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-1);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--orange-deep);
+  --accent-foreground: var(--paper-0);
+  --destructive: var(--signal-red);
+  --border: var(--ink);
+  --input: var(--paper-2);
+  --ring: var(--orange);
+  --chart-1: var(--orange);
+  --chart-2: var(--signal-amber);
+  --chart-3: var(--signal-green);
+  --chart-4: var(--signal-blue);
+  --chart-5: var(--signal-red);
+  --sidebar: var(--paper-0);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--orange);
+  --sidebar-primary-foreground: var(--paper-0);
+  --sidebar-accent: var(--paper-1);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--ink);
+  --sidebar-ring: var(--orange);
 }
 
 @theme inline {
-  --font-heading: var(--font-pixel);
+  --font-sans: var(--font-sans);
+  --font-condensed: var(--font-condensed);
   --font-mono: var(--font-mono);
   --font-pixel: var(--font-pixel);
-  --font-sans: var(--font-sans);
+  --font-dot: var(--font-dot);
 
+  --color-paper: var(--paper);
+  --color-paper-0: var(--paper-0);
+  --color-paper-1: var(--paper-1);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-ghost: var(--ink-ghost);
+  --color-orange: var(--orange);
+  --color-orange-deep: var(--orange-deep);
+  --color-orange-tint: var(--orange-tint);
+  --color-signal-red: var(--signal-red);
+  --color-signal-amber: var(--signal-amber);
+  --color-signal-green: var(--signal-green);
+  --color-signal-blue: var(--signal-blue);
+
+  /* Back-compat color aliases for any utility class still on the old names. */
   --color-bg-0: var(--bg-0);
   --color-bg-1: var(--bg-1);
   --color-bg-2: var(--bg-2);
@@ -183,16 +201,13 @@
   --color-border-1: var(--border-1);
   --color-border-2: var(--border-2);
   --color-border-3: var(--border-3);
-  --color-bf-orange: var(--bf-orange);
-  --color-bf-orange-hot: var(--bf-orange-hot);
-  --color-bf-orange-deep: var(--bf-orange-deep);
-  --color-bf-orange-dim: var(--bf-orange-dim);
-  --color-term-green: var(--term-green);
-  --color-term-amber: var(--term-amber);
-  --color-term-red: var(--term-red);
-  --color-term-blue: var(--term-blue);
-  --color-term-purple: var(--term-purple);
-  --color-term-cyan: var(--term-cyan);
+  --color-bf-orange: var(--orange);
+  --color-bf-orange-hot: var(--orange-tint);
+  --color-bf-orange-deep: var(--orange-deep);
+  --color-term-green: var(--signal-green);
+  --color-term-amber: var(--signal-amber);
+  --color-term-red: var(--signal-red);
+  --color-term-blue: var(--signal-blue);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -227,12 +242,12 @@
   --color-background: var(--background);
 
   --radius-sm: 0px;
-  --radius-md: 2px;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
-  --radius-2xl: 8px;
-  --radius-3xl: 10px;
-  --radius-4xl: 12px;
+  --radius-md: 0px;
+  --radius-lg: 2px;
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
+  --radius-4xl: 6px;
 }
 
 @layer base {
@@ -245,136 +260,46 @@
   }
 
   body {
-    background: var(--bg-0);
-    color: var(--fg-1);
+    background: var(--paper);
+    color: var(--ink);
     font-family: var(--font-sans);
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
   }
 
-  /* The single allowed gradient — radial orange glow behind the wordmark */
-  body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 900px;
-    background: radial-gradient(
-      ellipse at 30% 35%,
-      rgba(255, 107, 26, 0.18) 0%,
-      rgba(255, 107, 26, 0) 60%
-    );
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Wordmark cursor */
-  @keyframes bf-blink {
-    50% {
-      opacity: 0;
-    }
-  }
-
-  /* Status dot pulse */
-  @keyframes bf-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
+  ::selection {
+    background: var(--orange);
+    color: var(--paper-0);
   }
 }
 
-@utility shadow-brutal-orange {
-  box-shadow: 4px 4px 0 0 var(--bf-orange-deep);
+@utility paper-grid {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(17, 17, 17, 0.08) 1px,
+    transparent 0
+  );
+  background-size: 16px 16px;
 }
-@utility shadow-brutal-orange-lg {
-  box-shadow: 6px 6px 0 0 var(--bf-orange-deep);
+
+@utility text-mega {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: clamp(72px, 14vw, 168px);
+  letter-spacing: -0.025em;
+  line-height: 0.84;
+  text-transform: uppercase;
 }
-@utility shadow-brutal-ink {
-  box-shadow: 4px 4px 0 0 rgba(245, 241, 234, 0.85);
-}
 
-@layer components {
-  [data-slot="button"]:where(
-      [data-variant="default"],
-      [data-variant="outline"],
-      [data-variant="destructive"]
-    ) {
-    --btn-brutal-offset: 4px;
-    position: relative;
-  }
-
-  [data-slot="button"][data-variant="default"] {
-    --btn-brutal-color: var(--bf-orange-deep);
-  }
-  [data-slot="button"][data-variant="outline"] {
-    --btn-brutal-color: rgba(245, 241, 234, 0.85);
-    --btn-brutal-color-hover: var(--fg-1);
-  }
-  [data-slot="button"][data-variant="destructive"] {
-    --btn-brutal-color: #8c2520;
-  }
-
-  [data-slot="button"]:where([data-variant="default"], [data-variant="outline"])[data-size="sm"] {
-    --btn-brutal-offset: 3px;
-  }
-  [data-slot="button"]:where([data-variant="default"], [data-variant="outline"])[data-size="lg"] {
-    --btn-brutal-offset: 6px;
-  }
-
-  [data-slot="button"]:where(
-      [data-variant="default"],
-      [data-variant="outline"],
-      [data-variant="destructive"]
-    )::after {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    box-sizing: border-box;
-    border: 1px solid transparent;
-    border-right-color: var(--btn-brutal-color);
-    border-bottom-color: var(--btn-brutal-color);
-    transform: translate(var(--btn-brutal-offset), var(--btn-brutal-offset));
-    pointer-events: none;
-    transition:
-      transform var(--dur-fast) var(--ease-out),
-      opacity var(--dur-fast) var(--ease-out),
-      border-color var(--dur-fast) var(--ease-out);
-  }
-
-  [data-slot="button"]:where(
-      [data-variant="default"],
-      [data-variant="outline"],
-      [data-variant="destructive"]
-    ):hover::after {
-    transform: translate(
-      calc(var(--btn-brutal-offset) + 1px),
-      calc(var(--btn-brutal-offset) + 1px)
-    );
-    border-right-color: var(--btn-brutal-color-hover, var(--btn-brutal-color));
-    border-bottom-color: var(--btn-brutal-color-hover, var(--btn-brutal-color));
-  }
-
-  [data-slot="button"]:where(
-      [data-variant="default"],
-      [data-variant="outline"],
-      [data-variant="destructive"]
-    ):active::after,
-  [data-slot="button"]:where(
-      [data-variant="default"],
-      [data-variant="outline"],
-      [data-variant="destructive"]
-    ):disabled::after,
-  [data-slot="button"]:where(
-      [data-variant="default"],
-      [data-variant="outline"],
-      [data-variant="destructive"]
-    )[aria-disabled="true"]::after {
-    opacity: 0;
-  }
+@utility eyebrow-chip {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--paper-0);
+  padding: 4px 8px 3px;
+  line-height: 1;
 }
