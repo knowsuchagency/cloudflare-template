@@ -7,6 +7,13 @@
   "logpush": true,
   "observability": { "enabled": true },
   "preview_urls": true,
+  // Workers AI binding. `c.env.AI` (typed by `wrangler types`) powers the
+  // streaming chatbot at POST /api/chat, routed through the "default" AI
+  // Gateway. Inference runs on Cloudflare's GPU network — `wrangler dev`
+  // proxies to it (no --remote needed) and bills real usage even locally.
+  // `remote: true` makes that "always hits remote" contract explicit and
+  // silences wrangler's local-dev warning.
+  "ai": { "binding": "AI", "remote": true },
   "d1_databases": [
     {
       "binding": "DB",
@@ -66,6 +73,9 @@
         "BETTER_AUTH_URL": "http://localhost:8787"{% if cloudflare_account_subdomain %},
         "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %}
       },
+      // Bindings are not inherited by named environments — redeclare AI here
+      // so the preview Worker can serve /api/chat too.
+      "ai": { "binding": "AI", "remote": true },
       "d1_databases": [
         {
           "binding": "DB",
