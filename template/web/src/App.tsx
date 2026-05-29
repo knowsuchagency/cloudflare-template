@@ -7,6 +7,7 @@ import { Landing } from "@/pages/landing"
 import { Login } from "@/pages/login"
 import { Signup } from "@/pages/signup"
 import { AppPage } from "@/pages/app"
+import { Chat } from "@/pages/chat"
 
 export function App() {
   return (
@@ -34,6 +35,14 @@ export function App() {
           element={
             <RequireAuth>
               <AppPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <RequireAuth>
+              <Chat />
             </RequireAuth>
           }
         />

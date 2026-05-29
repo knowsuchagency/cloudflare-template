@@ -85,4 +85,5 @@ function TabsContent({
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- cva variants ship alongside the component by shadcn convention
 export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }
