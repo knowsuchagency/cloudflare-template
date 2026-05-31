@@ -75,7 +75,7 @@ if (typeof window !== "undefined") {
       lastPointerX = e.clientX
       lastPointerY = e.clientY
     },
-    { capture: true, passive: true },
+    { capture: true, passive: true }
   )
 }
 
@@ -92,7 +92,7 @@ function ContextMenuContent({
     }
     if (!el) return
     const wrapper = el.closest<HTMLElement>(
-      "[data-radix-popper-content-wrapper]",
+      "[data-radix-popper-content-wrapper]"
     )
     if (!wrapper) return
     const reposition = () => {
@@ -104,11 +104,11 @@ function ContextMenuContent({
       const wantTop = lastPointerY - r.height - padding
       const left = Math.max(
         padding,
-        Math.min(window.innerWidth - r.width - padding, wantLeft),
+        Math.min(window.innerWidth - r.width - padding, wantLeft)
       )
       const top = Math.max(
         padding,
-        Math.min(window.innerHeight - r.height - padding, wantTop),
+        Math.min(window.innerHeight - r.height - padding, wantTop)
       )
       wrapper.style.setProperty("position", "fixed", "important")
       wrapper.style.setProperty("left", `${left}px`, "important")
@@ -146,7 +146,10 @@ function ContextMenuContent({
         ref={setRef}
         data-slot="context-menu-content"
         data-pointer={lastPointerType}
-        className={cn("z-50 max-h-(--radix-context-menu-content-available-height) min-w-36 origin-(--radix-context-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-none bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+        className={cn(
+          "z-50 max-h-(--radix-context-menu-content-available-height) min-w-36 origin-(--radix-context-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-none bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          className
+        )}
         {...props}
       />
     </ContextMenuPrimitive.Portal>
@@ -207,7 +210,10 @@ function ContextMenuSubContent({
   return (
     <ContextMenuPrimitive.SubContent
       data-slot="context-menu-sub-content"
-      className={cn("z-50 min-w-32 origin-(--radix-context-menu-content-transform-origin) overflow-hidden rounded-none border bg-popover text-popover-foreground shadow-lg duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+      className={cn(
+        "z-50 min-w-32 origin-(--radix-context-menu-content-transform-origin) overflow-hidden rounded-none border bg-popover text-popover-foreground shadow-lg duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+        className
+      )}
       {...props}
     />
   )

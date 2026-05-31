@@ -1,4 +1,4 @@
-import * as React from "react"
+import type * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Tabs as TabsPrimitive } from "radix-ui"
 
@@ -85,5 +85,5 @@ function TabsContent({
   )
 }
 
-// eslint-disable-next-line react-refresh/only-export-components -- cva variants ship alongside the component by shadcn convention
+// cva variants ship alongside the component by shadcn convention
 export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }

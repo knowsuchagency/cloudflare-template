@@ -1,32 +1,32 @@
 export type AuthUser = {
-  id: string;
-  name: string;
-  email: string;
-  emailVerified: boolean;
-  image: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+  image: string | null
+  createdAt: string
+  updatedAt: string
+}
 
 export type AuthSession = {
-  user: AuthUser;
-  session: { id: string; expiresAt: string; token: string };
-};
+  user: AuthUser
+  session: { id: string; expiresAt: string; token: string }
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     credentials: "include",
     headers: { "content-type": "application/json", ...init?.headers },
     ...init,
-  });
-  const text = await res.text();
-  const body = text ? JSON.parse(text) : null;
+  })
+  const text = await res.text()
+  const body = text ? JSON.parse(text) : null
   if (!res.ok) {
     const message =
-      body?.message ?? body?.error?.message ?? `Request failed (${res.status})`;
-    throw new Error(message);
+      body?.message ?? body?.error?.message ?? `Request failed (${res.status})`
+    throw new Error(message)
   }
-  return body as T;
+  return body as T
 }
 
 export const authClient = {
@@ -46,4 +46,4 @@ export const authClient = {
       method: "POST",
       body: "{}",
     }),
-};
+}

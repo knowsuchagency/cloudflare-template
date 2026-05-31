@@ -2,13 +2,7 @@
 
 import type * as React from "react"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import {
-  CircleCheck,
-  CircleX,
-  Info,
-  Loader,
-  TriangleAlert,
-} from "lucide-react"
+import { CircleCheck, CircleX, Info, Loader, TriangleAlert } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -20,7 +14,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
         info: <Info className="size-4 text-[var(--term-blue)]" />,
         warning: <TriangleAlert className="size-4 text-[var(--term-amber)]" />,
         error: <CircleX className="size-4 text-[var(--term-red)]" />,
-        loading: <Loader className="size-4 animate-spin text-[var(--bf-orange)]" />,
+        loading: (
+          <Loader className="size-4 animate-spin text-[var(--bf-orange)]" />
+        ),
       }}
       style={
         {

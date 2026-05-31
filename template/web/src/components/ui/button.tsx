@@ -1,4 +1,4 @@
-import * as React from "react"
+import type * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 
@@ -87,5 +87,5 @@ function Button({
   )
 }
 
-// eslint-disable-next-line react-refresh/only-export-components -- cva variants ship alongside the component by shadcn convention
+// cva variants ship alongside the component by shadcn convention
 export { Button, buttonVariants }

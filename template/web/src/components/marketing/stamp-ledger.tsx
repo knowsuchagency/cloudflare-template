@@ -26,16 +26,14 @@ export function StampLedger() {
 
       {/* Log body */}
       <div className="flex flex-col gap-1 px-4 py-4 font-mono text-[13px] leading-[1.55]">
-        {ENTRIES.map((e, i) => (
+        {ENTRIES.map((e) => (
           <div
-            key={i}
+            key={e.v}
             className={
               e.tone === "accent" ? "text-[var(--orange)]" : "text-[var(--ink)]"
             }
           >
-            {e.k && (
-              <span className="text-[var(--ink-3)] mr-2">{e.k}</span>
-            )}
+            {e.k && <span className="text-[var(--ink-3)] mr-2">{e.k}</span>}
             <span>{e.v}</span>
           </div>
         ))}

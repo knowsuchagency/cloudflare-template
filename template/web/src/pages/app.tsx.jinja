@@ -75,9 +75,7 @@ function Inner({ user }: { user: AuthUser }) {
                 label="Email verified"
                 value={user.emailVerified ? "yes" : "no"}
                 color={
-                  user.emailVerified
-                    ? "var(--term-green)"
-                    : "var(--term-amber)"
+                  user.emailVerified ? "var(--term-green)" : "var(--term-amber)"
                 }
               />
               <Row

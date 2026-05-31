@@ -83,11 +83,7 @@ export function Login() {
             <FieldError>{error}</FieldError>
           </Field>
           <Button type="submit" disabled={signIn.isPending} className="w-full">
-            {signIn.isPending ? (
-              <Loader className="animate-spin" />
-            ) : (
-              <LogIn />
-            )}
+            {signIn.isPending ? <Loader className="animate-spin" /> : <LogIn />}
             Sign in <span aria-hidden>&rarr;</span>
           </Button>
         </FieldGroup>

@@ -39,9 +39,7 @@ export function FeatureRow() {
           className={
             "relative flex flex-col gap-5 px-5 py-7 " +
             // Hairline dividers between columns; only show on the relevant breakpoints
-            (i > 0
-              ? "lg:border-l lg:border-[var(--ink)] "
-              : "") +
+            (i > 0 ? "lg:border-l lg:border-[var(--ink)] " : "") +
             (i % 2 === 1 ? "sm:border-l sm:border-[var(--ink)] " : "") +
             (i >= 2 ? "sm:border-t sm:border-[var(--ink)] lg:border-t-0 " : "")
           }
@@ -49,7 +47,8 @@ export function FeatureRow() {
           {/* Top: numeric eyebrow */}
           <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink-ghost)]">
             <span>
-              {String(i + 1).padStart(2, "0")} / {String(FEATURES.length).padStart(2, "0")}
+              {String(i + 1).padStart(2, "0")} /{" "}
+              {String(FEATURES.length).padStart(2, "0")}
             </span>
             <span
               className="block size-[6px] bg-[var(--orange)]"

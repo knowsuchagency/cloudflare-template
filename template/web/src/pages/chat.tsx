@@ -24,6 +24,7 @@ export function Chat() {
   const busy = status === "submitted" || status === "streaming"
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages/status are intentional triggers to auto-scroll on new chat activity, not values read in the effect
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [messages, status])
@@ -53,10 +54,7 @@ export function Chat() {
       </header>
 
       <main className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-8 sm:px-14">
-        <div
-          ref={scrollRef}
-          className="flex-1 space-y-4 overflow-y-auto pb-4"
-        >
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto pb-4">
           {messages.length === 0 && (
             <div className="mt-12 text-center">
               <Bot className="mx-auto mb-4 size-10 text-[var(--bf-orange)]" />
@@ -78,9 +76,7 @@ export function Chat() {
             return (
               <div
                 key={message.id}
-                className={
-                  "flex gap-3 " + (isUser ? "flex-row-reverse" : "flex-row")
-                }
+                className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
               >
                 <div
                   className={

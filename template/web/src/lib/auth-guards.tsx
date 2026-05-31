@@ -5,7 +5,7 @@ import { Navigate } from "react-router"
 
 import { authClient, type AuthSession } from "@/lib/auth-client"
 
-// eslint-disable-next-line react-refresh/only-export-components -- useSession is a hook deliberately co-located with the route guards that consume it
+// useSession is a hook deliberately co-located with the route guards that consume it
 export function useSession() {
   return useQuery<AuthSession | null>({
     queryKey: ["session"],

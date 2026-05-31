@@ -23,7 +23,6 @@ web/.vite/
 # .copier-answers.yml   <- do NOT ignore; it records the template version/inputs
 
 # caches
-.eslintcache
 .cache
 *.tsbuildinfo
 
