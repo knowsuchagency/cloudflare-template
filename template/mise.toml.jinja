@@ -260,7 +260,10 @@ description = "Create the remote D1 and patch database_id into wrangler.jsonc (i
 run = '''
 placeholder="REPLACE_WITH_ID_FROM_wrangler_d1_create"
 
-if ! grep -q "$placeholder" wrangler.jsonc; then
+# Anchor on the surrounding quotes: this prod placeholder is a prefix of the
+# preview one ("..._create_preview"), so an unquoted match/replace would also
+# hit (and corrupt) the preview placeholder.
+if ! grep -q "\"$placeholder\"" wrangler.jsonc; then
   echo "✓ wrangler.jsonc already has a database_id — skipping"
   exit 0
 fi
@@ -291,7 +294,7 @@ if [ -z "$id" ]; then
 fi
 
 tmp=$(mktemp)
-sed "s|$placeholder|$id|" wrangler.jsonc > "$tmp" && mv "$tmp" wrangler.jsonc
+sed "s|\"$placeholder\"|\"$id\"|" wrangler.jsonc > "$tmp" && mv "$tmp" wrangler.jsonc
 echo "✓ wrangler.jsonc patched with database_id $id"
 '''
 
@@ -309,7 +312,9 @@ description = "Create the remote preview D1 ({{ d1_database_name }}-preview) and
 run = '''
 placeholder="REPLACE_WITH_ID_FROM_wrangler_d1_create_preview"
 
-if ! grep -q "$placeholder" wrangler.jsonc; then
+# Anchor on the surrounding quotes for symmetry with d1:create (keeps the
+# match exact regardless of any future placeholder that shares this prefix).
+if ! grep -q "\"$placeholder\"" wrangler.jsonc; then
   echo "✓ wrangler.jsonc already has a preview database_id — skipping"
   exit 0
 fi
@@ -338,7 +343,7 @@ if [ -z "$id" ]; then
 fi
 
 tmp=$(mktemp)
-sed "s|$placeholder|$id|" wrangler.jsonc > "$tmp" && mv "$tmp" wrangler.jsonc
+sed "s|\"$placeholder\"|\"$id\"|" wrangler.jsonc > "$tmp" && mv "$tmp" wrangler.jsonc
 echo "✓ wrangler.jsonc patched with preview database_id $id"
 '''
 
@@ -478,7 +483,7 @@ openssl rand -base64 32 | bunx wrangler secret put BETTER_AUTH_SECRET --env prev
 description = "Build the SPA and deploy the preview Worker (auto-patches env.preview.vars.BETTER_AUTH_URL on first deploy)"
 depends = ["web:build", "d1:create-preview", "migrate:remote-preview"]
 run = '''
-if grep -q REPLACE_WITH_ID_FROM_wrangler_d1_create_preview wrangler.jsonc; then
+if grep -q '"REPLACE_WITH_ID_FROM_wrangler_d1_create_preview"' wrangler.jsonc; then
   echo "✗ wrangler.jsonc still has the preview D1 id placeholder — run: mise run d1:create-preview" >&2
   exit 1
 fi
@@ -936,7 +941,7 @@ openssl rand -base64 32 | bunx wrangler secret put BETTER_AUTH_SECRET
 description = "Build the SPA and deploy the Worker (auto-patches BETTER_AUTH_URL on first deploy)"
 depends = ["web:build", "d1:create", "migrate:remote"]
 run = '''
-if grep -q REPLACE_WITH_ID_FROM_wrangler_d1_create wrangler.jsonc; then
+if grep -q '"REPLACE_WITH_ID_FROM_wrangler_d1_create"' wrangler.jsonc; then
   echo "✗ wrangler.jsonc still has the D1 id placeholder — run: mise run d1:create" >&2
   exit 1
 fi
