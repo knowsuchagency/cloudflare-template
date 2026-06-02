@@ -546,8 +546,16 @@ depends = ["d1:create"]
 run = '''
 command -v jq >/dev/null 2>&1 || { echo "✗ d1:replicate requires jq (https://jqlang.org)" >&2; exit 1; }
 
+# wrangler.jsonc is JSONC (comments + trailing commas); jq only parses strict
+# JSON. Strip whole-line // comments and trailing commas via node (pinned in
+# [tools], unlike python3) before piping to jq. The ^\s*// anchor leaves //
+# inside string values such as https:// URLs intact.
+wrangler_json() {
+  node -e 'const fs=require("fs"); const s=fs.readFileSync(process.argv[1],"utf8").replace(/^\s*\/\/.*$/gm,"").replace(/,(\s*[}\]])/g,"$1"); process.stdout.write(s);' wrangler.jsonc
+}
+
 placeholder="REPLACE_WITH_ID_FROM_wrangler_d1_create"
-db_id=$(jq -r '.d1_databases[0].database_id' wrangler.jsonc)
+db_id=$(wrangler_json | jq -r '.d1_databases[0].database_id')
 if [ "$db_id" = "$placeholder" ] || [ -z "$db_id" ] || [ "$db_id" = "null" ]; then
   echo "✗ wrangler.jsonc has no database_id yet — run: mise run d1:create" >&2
   exit 1
