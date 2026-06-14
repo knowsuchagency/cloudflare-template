@@ -19,13 +19,13 @@ export function InstallBlock() {
   }
 
   return (
-    <div className="border border-[var(--ink)] bg-[var(--paper-0)]">
+    <div className="border border-[var(--border-1)] bg-[var(--bg-1)]">
       {/* Eyebrow header */}
-      <div className="flex items-center justify-between border-b border-[var(--ink)] px-4 py-2">
-        <span className="bg-[var(--ink)] px-2 py-1 font-mono text-[10px] leading-none tracking-[0.08em] uppercase text-[var(--paper-0)]">
-          [ INSTALL ]
+      <div className="flex items-center justify-between border-b border-[var(--border-1)] px-4 py-2.5">
+        <span className="font-mono text-[10px] leading-none tracking-[0.1em] uppercase text-[var(--fg-2)]">
+          INSTALL
         </span>
-        <span className="font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink-ghost)]">
+        <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-3)]">
           STEP {STEPS[active].id} / {String(STEPS.length).padStart(2, "0")}
         </span>
       </div>
@@ -38,22 +38,24 @@ export function InstallBlock() {
             type="button"
             onClick={() => setActive(i)}
             className={
-              "flex items-center gap-[10px] border-b border-[var(--ink)] px-4 py-[10px] text-left font-mono text-[13px] last:border-b-0 transition-colors duration-[120ms] " +
+              "flex items-center gap-[10px] border-b border-[var(--border)] px-4 py-[11px] text-left font-mono text-[13px] last:border-b-0 transition-colors duration-150 " +
               (i === active
-                ? "bg-[var(--paper-0)]"
-                : "bg-[var(--paper-1)] hover:bg-[var(--paper-0)]")
+                ? "bg-[var(--bg-2)]"
+                : "bg-transparent hover:bg-[var(--bg-2)]")
             }
           >
             <span
               className={
-                "block size-[8px] flex-shrink-0 " +
-                (i === active ? "bg-[var(--orange)]" : "bg-[var(--ink-ghost)]")
+                "block size-[7px] flex-shrink-0 " +
+                (i === active
+                  ? "bg-[var(--fg-0)]"
+                  : "border border-[var(--fg-3)]")
               }
               aria-hidden="true"
             />
-            <span className="font-bold text-[var(--orange)]">$</span>
-            <span className="flex-1 text-[var(--ink)]">{step.cmd}</span>
-            <span className="font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink-ghost)]">
+            <span className="text-[var(--fg-3)]">$</span>
+            <span className="flex-1 text-[var(--fg-1)]">{step.cmd}</span>
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-3)]">
               {step.id}
             </span>
           </button>
@@ -61,14 +63,14 @@ export function InstallBlock() {
       </div>
 
       {/* Copy footer */}
-      <div className="flex items-center justify-between border-t border-[var(--ink)] px-4 py-2">
-        <span className="font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink-3)]">
+      <div className="flex items-center justify-between border-t border-[var(--border-1)] px-4 py-2.5">
+        <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-3)]">
           {copied ? "COPIED" : "CLIPBOARD READY"}
         </span>
         <button
           type="button"
           onClick={onCopy}
-          className="cursor-pointer border border-[var(--ink)] bg-transparent px-3 py-1 font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink)] hover:bg-[var(--ink)] hover:text-[var(--paper-0)] transition-colors duration-[120ms]"
+          className="cursor-pointer border border-[var(--border-1)] bg-transparent px-3 py-1 font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-1)] hover:border-[var(--fg-0)] hover:text-[var(--fg-0)] transition-colors duration-150"
         >
           {copied ? "COPIED ✓" : "COPY"}
         </button>

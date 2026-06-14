@@ -6,6 +6,7 @@ import { ArrowLeft, Bot, Loader, Send, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 // Streaming chat against the auth-gated Worker route POST /api/chat.
 // History is ephemeral: useChat keeps it in React state and re-sends the
@@ -47,9 +48,12 @@ export function Chat() {
           <ArrowLeft className="size-4" />
           Back
         </Link>
-        <div className="flex items-center gap-2 text-sm text-[var(--fg-2)]">
-          <Bot className="size-5 text-[var(--bf-orange)]" />
-          <span>Assistant</span>
+        <div className="flex items-center gap-3 text-sm text-[var(--fg-2)]">
+          <div className="flex items-center gap-2">
+            <Bot className="size-5 text-[var(--fg-3)]" />
+            <span>Assistant</span>
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -57,8 +61,8 @@ export function Chat() {
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto pb-4">
           {messages.length === 0 && (
             <div className="mt-12 text-center">
-              <Bot className="mx-auto mb-4 size-10 text-[var(--bf-orange)]" />
-              <p className="font-sans text-lg font-semibold text-[var(--fg-1)]">
+              <Bot className="mx-auto mb-4 size-10 text-[var(--fg-3)]" />
+              <p className="font-sans text-lg font-medium text-[var(--fg-0)]">
                 Ask me anything.
               </p>
               <p className="mt-1 text-sm text-[var(--fg-3)]">

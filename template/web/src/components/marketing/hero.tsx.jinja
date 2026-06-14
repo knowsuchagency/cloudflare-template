@@ -1,58 +1,45 @@
 import { Link } from "react-router"
 
 import { Button } from "@/components/ui/button"
-import { Wordmark } from "@/components/marketing/wordmark"
 import { StampLedger } from "@/components/marketing/stamp-ledger"
 import { InstallBlock } from "@/components/marketing/install-block"
 
 export function Hero() {
   return (
-    <section className="relative py-12 lg:py-20">
-      {/* Top eyebrow chips — apex edge-anchored chrome */}
-      <div className="mb-10 flex items-center justify-between">
-        <span className="bg-[var(--ink)] px-2 py-1 font-mono text-[10px] leading-none tracking-[0.08em] uppercase text-[var(--paper-0)]">
-          EXPERIMENTAL SYSTEMS
-        </span>
-        <span className="hidden font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink-ghost)] sm:inline">
-          &gt;&gt;&gt;&gt;&gt;
-        </span>
-        <span className="bg-[var(--ink)] px-2 py-1 font-mono text-[10px] leading-none tracking-[0.08em] uppercase text-[var(--paper-0)]">
-          STATUS · ACTIVE
-        </span>
+    <section className="relative py-16 lg:py-24">
+      {/* Eyebrow — mono instrument label, edge-anchored */}
+      <div className="mb-12 flex items-center justify-between font-mono text-[10px] tracking-[0.1em] text-[var(--fg-2)] uppercase">
+        <span>EXPERIMENTAL SYSTEMS</span>
+        <span className="hidden sm:inline">EST · 2026</span>
       </div>
 
-      {/* Mega wordmark with orange parallelogram slice */}
-      <div className="relative mb-12 inline-block">
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-[-2%] top-[42%] block h-[28%] -skew-x-[14deg] bg-[var(--orange)]"
-        />
-        <span className="relative">
-          <Wordmark text="{{ app_title }}" size="hero" />
-        </span>
+      {/* Hero wordmark — Doto dot-matrix display, the one expressive moment */}
+      <h1 className="m-0 mb-10 font-display text-[clamp(56px,11vw,140px)] leading-[0.9] font-semibold tracking-[-0.03em] text-[var(--fg-0)] uppercase">
+        {{ app_title }}
+      </h1>
+
+      {/* Mono metadata strip — tertiary, pushed quiet */}
+      <div className="mb-10 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] tracking-[0.08em] text-[var(--fg-3)] uppercase">
+        <span className="text-[var(--fg-2)]">EDGE BUNDLE · WORKERS V4</span>
+        <span aria-hidden>·</span>
+        <span>HONO · REACT · D1</span>
+        <span aria-hidden>·</span>
+        <span>BUILD 0001</span>
       </div>
 
-      {/* Mono metadata strip */}
-      <div className="mb-9 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] tracking-[0.08em] uppercase text-[var(--ink-ghost)]">
-        <span className="text-[var(--ink-2)]">REPORT ID · DEPLOY-2026-001</span>
-        <span>·</span>
-        <span>EDGE BUNDLE · WORKERS V4</span>
-        <span>·</span>
-        <span>STAMP · 0001</span>
-      </div>
-
-      {/* Tagline */}
-      <h2 className="m-0 mb-7 max-w-[640px] font-condensed text-[28px] leading-[1.15] font-bold uppercase tracking-[0.01em] text-[var(--ink)]">
+      {/* Tagline — Space Grotesk, secondary layer */}
+      <h2 className="m-0 mb-6 max-w-[680px] font-sans text-[28px] leading-[1.15] font-medium tracking-[-0.01em] text-[var(--fg-1)]">
         {{ app_tagline }}
       </h2>
 
-      <p className="m-0 mb-9 max-w-[640px] font-mono text-[13px] leading-[1.7] text-[var(--ink-2)]">
+      <p className="m-0 mb-10 max-w-[600px] font-sans text-[15px] leading-[1.6] text-[var(--fg-2)]">
         A typed full-stack starter on Cloudflare Workers. Hono on the edge,
         React + Vite on the front, Better Auth on top of D1. Sign up, sign in,
         and start shipping.
       </p>
 
-      <div className="mb-12 flex flex-wrap items-center gap-[14px]">
+      <div className="mb-16 flex flex-wrap items-center gap-3">
+        {/* The page's single red interrupt — the action we want taken. */}
         <Button size="lg" variant="accent" asChild>
           <Link to="/signup">
             GET STARTED <span aria-hidden>→</span>
@@ -63,12 +50,12 @@ export function Hero() {
             SIGN IN <span aria-hidden>→</span>
           </Link>
         </Button>
-        <span className="ml-2 font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink-ghost)]">
-          <span className="text-[var(--orange)]">▪</span> FREE DURING PREVIEW
+        <span className="ml-1 font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
+          FREE DURING PREVIEW
         </span>
       </div>
 
-      {/* Two-up: install + system insight log */}
+      {/* Two-up: install steps + system log */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <InstallBlock />
         <StampLedger />

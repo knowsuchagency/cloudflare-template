@@ -5,45 +5,48 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const BTN_TRANSITION =
-  "transition-[background-color,color,border-color] duration-[120ms] ease-[cubic-bezier(0.2,0.7,0.1,1)]"
+  "transition-[background-color,color,border-color,opacity] duration-[150ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
 
 const buttonVariants = cva(
   cn(
-    "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-none border border-transparent font-mono uppercase tracking-[0.08em] whitespace-nowrap select-none outline-none",
+    "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-none border font-mono uppercase tracking-[0.08em] whitespace-nowrap select-none outline-none",
     BTN_TRANSITION,
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--orange)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper)]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-0)]",
     "disabled:pointer-events-none disabled:opacity-50",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
   ),
   {
     variants: {
       variant: {
+        // Solid monochrome fill — the primary control. Ink on light, white on dark.
         default: cn(
-          "bg-[var(--ink)] text-[var(--paper-0)] border-[var(--ink)]",
-          "hover:bg-[var(--orange)] hover:border-[var(--orange)]"
+          "bg-[var(--fg-0)] text-[var(--bg-1)] border-[var(--fg-0)]",
+          "hover:bg-[var(--fg-1)] hover:border-[var(--fg-1)]"
         ),
+        // The red interrupt — one per screen, the single most urgent action.
         accent: cn(
-          "bg-[var(--orange)] text-[var(--paper-0)] border-[var(--orange)]",
-          "hover:bg-[var(--orange-deep)] hover:border-[var(--orange-deep)]"
+          "bg-[var(--accent)] text-white border-[var(--accent)]",
+          "hover:opacity-90"
         ),
+        // Wireframe button — Nothing hover brightens border + text, no fill.
         outline: cn(
-          "bg-transparent text-[var(--ink)] border-[var(--ink)]",
-          "hover:bg-[var(--ink)] hover:text-[var(--paper-0)]"
+          "bg-transparent text-[var(--fg-1)] border-[var(--border-1)]",
+          "hover:border-[var(--fg-0)] hover:text-[var(--fg-0)]"
         ),
         secondary: cn(
-          "bg-[var(--paper-1)] text-[var(--ink)] border-[var(--paper-1)]",
-          "hover:bg-[var(--paper-2)] hover:border-[var(--paper-2)]"
+          "bg-[var(--bg-2)] text-[var(--fg-1)] border-[var(--bg-2)]",
+          "hover:border-[var(--border-1)]"
         ),
         ghost: cn(
-          "bg-transparent text-[var(--ink-2)] border-transparent",
-          "hover:bg-[var(--paper-1)] hover:text-[var(--ink)]"
+          "bg-transparent text-[var(--fg-2)] border-transparent",
+          "hover:bg-[var(--bg-2)] hover:text-[var(--fg-1)]"
         ),
         destructive: cn(
-          "bg-transparent text-[var(--signal-red)] border-[var(--signal-red)]",
-          "hover:bg-[var(--signal-red)] hover:text-[var(--paper-0)]"
+          "bg-transparent text-[var(--accent)] border-[var(--accent)]",
+          "hover:bg-[var(--accent)] hover:text-white"
         ),
         link: cn(
-          "bg-transparent border-transparent text-[var(--orange)] underline-offset-4 normal-case tracking-normal font-sans",
+          "bg-transparent border-transparent text-[var(--interactive)] underline-offset-4 normal-case tracking-normal font-sans",
           "hover:underline"
         ),
       },

@@ -31,44 +31,38 @@ export function FeatureRow() {
   return (
     <section
       id="features"
-      className="border-t border-[var(--ink)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+      className="border-t border-[var(--border-1)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
     >
       {FEATURES.map((f, i) => (
         <article
           key={f.title}
           className={
-            "relative flex flex-col gap-5 px-5 py-7 " +
+            "relative flex flex-col gap-5 px-5 py-8 " +
             // Hairline dividers between columns; only show on the relevant breakpoints
-            (i > 0 ? "lg:border-l lg:border-[var(--ink)] " : "") +
-            (i % 2 === 1 ? "sm:border-l sm:border-[var(--ink)] " : "") +
-            (i >= 2 ? "sm:border-t sm:border-[var(--ink)] lg:border-t-0 " : "")
+            (i > 0 ? "lg:border-l lg:border-[var(--border)] " : "") +
+            (i % 2 === 1 ? "sm:border-l sm:border-[var(--border)] " : "") +
+            (i >= 2 ? "sm:border-t sm:border-[var(--border)] lg:border-t-0 " : "")
           }
         >
-          {/* Top: numeric eyebrow */}
-          <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink-ghost)]">
-            <span>
-              {String(i + 1).padStart(2, "0")} /{" "}
-              {String(FEATURES.length).padStart(2, "0")}
-            </span>
-            <span
-              className="block size-[6px] bg-[var(--orange)]"
-              aria-hidden="true"
-            />
+          {/* Top: numeric eyebrow — mono, quiet */}
+          <div className="font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-3)]">
+            {String(i + 1).padStart(2, "0")} /{" "}
+            {String(FEATURES.length).padStart(2, "0")}
           </div>
 
-          {/* Middle: condensed title */}
-          <h3 className="font-condensed text-[22px] font-bold leading-[1.05] tracking-[0.01em] text-[var(--ink)]">
+          {/* Middle: heading — Space Grotesk */}
+          <h3 className="font-sans text-[18px] font-medium leading-[1.2] tracking-[-0.01em] text-[var(--fg-0)]">
             {f.title}
           </h3>
 
           {/* Body */}
-          <p className="font-mono text-[12px] leading-[1.5] text-[var(--ink-2)]">
+          <p className="font-sans text-[13px] leading-[1.55] text-[var(--fg-2)]">
             {f.body}
           </p>
 
-          {/* Bottom: orange rule + caption */}
-          <div className="mt-auto pt-3 border-t border-[var(--orange)]">
-            <span className="font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink-ghost)]">
+          {/* Bottom: caption */}
+          <div className="mt-auto pt-3">
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-3)]">
               {f.caption}
             </span>
           </div>

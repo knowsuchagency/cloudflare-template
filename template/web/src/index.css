@@ -1,120 +1,146 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/archivo";
-@import "@fontsource/archivo-narrow/400.css";
-@import "@fontsource/archivo-narrow/700.css";
-@import "@fontsource-variable/jetbrains-mono";
-@import url("https://fonts.googleapis.com/css2?family=Workbench:BLED,SCAN@-50..100,-50..50&display=swap");
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource/space-mono/400.css";
+@import "@fontsource/space-mono/700.css";
+@import "@fontsource-variable/doto";
 
-@custom-variant dark (&:is(.dark *));
+/* `dark:` utilities respond to an explicit theme choice. Default + system are
+   driven by light-dark() in the tokens below, not by this class. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* =============================================================
-   APEX DESIGN SYSTEM TOKENS
-   Industrial AI-operations brand. Warm paper, near-black ink,
-   vermilion-orange accent. Hard edges, monospace metadata.
+   NOTHING DESIGN SYSTEM TOKENS
+   Monochrome instrument panel. OLED black ↔ off-white paper,
+   red (#D71921) as a sparse interrupt — never decoration.
+   Both modes are first-class: every color is light-dark(light, dark)
+   and follows the OS by default. A data-theme override flips it.
    ============================================================= */
 :root {
-  /* PAPER — warm, never pure white */
-  --paper-0: #f2f0eb;
-  --paper: #e9e7e2;
-  --paper-1: #dedcd6;
-  --paper-2: #c9c7c2;
+  /* Default = follow the OS. The data-theme overrides force one mode and
+     are what the in-app toggle sets. light-dark() reads color-scheme. */
+  color-scheme: light dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
 
-  /* INK — near-black, never pure black */
-  --ink: #111111;
-  --ink-2: #2a2a2a;
-  --ink-3: #5c5c5a;
-  --ink-ghost: #aba9a3;
+:root {
+  /* SURFACES — page → card → raised */
+  --black: light-dark(#f5f5f5, #000000); /* page background */
+  --surface: light-dark(#ffffff, #111111); /* cards, panels */
+  --surface-raised: light-dark(#f0f0f0, #1a1a1a); /* secondary elevation */
 
-  /* BRAND — vermilion */
-  --orange: #ee5314;
-  --orange-deep: #c8420c;
-  --orange-tint: #f38256;
+  /* LINES — subtle (decorative) vs visible (wireframe / intentional) */
+  --border: light-dark(#e8e8e8, #222222);
+  --border-visible: light-dark(#cccccc, #333333);
 
-  /* SIGNAL — used sparingly for status */
-  --signal-red: #d42018;
-  --signal-amber: #e8a317;
-  --signal-green: #2e7d32;
-  --signal-blue: #0f4c81;
+  /* TEXT — four-step monochrome hierarchy */
+  --text-disabled: light-dark(#999999, #666666);
+  --text-secondary: light-dark(#666666, #999999);
+  --text-primary: light-dark(#1a1a1a, #e8e8e8);
+  --text-display: light-dark(#000000, #ffffff);
 
-  /* SURFACE ALIASES — codebase consumes these names directly. */
-  --bg-0: var(--paper);
-  --bg-1: var(--paper-0);
-  --bg-2: var(--paper-1);
-  --bg-3: var(--paper-2);
+  /* ACCENT — the interrupt. One per screen, applied to the value/element. */
+  --accent: #d71921;
+  --accent-subtle: rgba(215, 25, 33, 0.15);
 
-  /* FOREGROUND ALIASES */
-  --fg-1: var(--ink);
-  --fg-2: var(--ink-2);
-  --fg-3: var(--ink-3);
-  --fg-4: var(--ink-ghost);
+  /* STATUS — encode data, applied to the value not the label/background */
+  --success: light-dark(#3a8049, #4a9e5c);
+  --warning: light-dark(#b58a2b, #d4a843);
+  --error: #d71921;
+  --interactive: light-dark(#007aff, #5b9bf6); /* tappable text, links */
 
-  /* BORDERS — apex rule: ink hairlines, not gray */
-  --border-1: var(--ink);
-  --border-2: var(--ink-2);
-  --border-3: var(--paper-2);
+  /* SEMANTIC SURFACE/TEXT ALIASES — the names the app components consume. */
+  --bg-0: var(--black);
+  --bg-1: var(--surface);
+  --bg-2: var(--surface-raised);
+  --bg-3: var(--border);
 
-  /* BACK-COMPAT — bitforge naming kept as aliases so existing
-     component files compile without edits. New code should use the
-     canonical apex names above. */
-  --bf-orange: var(--orange);
-  --bf-orange-hot: var(--orange-tint);
-  --bf-orange-deep: var(--orange-deep);
-  --term-red: var(--signal-red);
-  --term-amber: var(--signal-amber);
-  --term-green: var(--signal-green);
-  --term-blue: var(--signal-blue);
+  --fg-0: var(--text-display);
+  --fg-1: var(--text-primary);
+  --fg-2: var(--text-secondary);
+  --fg-3: var(--text-disabled);
+  --fg-4: var(--text-disabled);
 
-  /* TYPE STACKS */
-  --font-sans: "Archivo Variable", "Archivo", "Helvetica Neue", Helvetica,
-    Arial, sans-serif;
-  --font-condensed: "Archivo Narrow", "Archivo", "Helvetica Neue Condensed",
+  --border-1: var(--border-visible);
+  --border-2: var(--border);
+  --border-3: var(--border);
+
+  /* BACK-COMPAT ALIASES — apex/bitforge names remapped onto the Nothing
+     palette so shadcn primitives keep resolving without per-file edits.
+     `--ink`/`--paper-0` form a high-contrast fill pair (solid buttons),
+     `--orange*` collapse onto the single red interrupt, and the old link
+     accent (`--bf-orange`) becomes the calm interactive blue. */
+  --ink: var(--text-display);
+  --ink-2: var(--text-primary);
+  --ink-3: var(--text-secondary);
+  --ink-ghost: var(--text-disabled);
+
+  --paper: var(--black);
+  --paper-0: var(--surface);
+  --paper-1: var(--surface-raised);
+  --paper-2: var(--border-visible);
+
+  --orange: var(--accent);
+  --orange-deep: var(--accent);
+  --orange-tint: var(--accent);
+  --bf-orange: var(--interactive);
+  --bf-orange-hot: var(--interactive);
+  --bf-orange-deep: var(--interactive);
+
+  --signal-red: var(--accent);
+  --signal-amber: var(--warning);
+  --signal-green: var(--success);
+  --signal-blue: var(--interactive);
+  --term-red: var(--accent);
+  --term-amber: var(--warning);
+  --term-green: var(--success);
+  --term-blue: var(--interactive);
+
+  /* TYPE STACKS — Colophon-foundry DNA + Doto dot-matrix for hero moments */
+  --font-sans: "Space Grotesk Variable", "Space Grotesk", "DM Sans", system-ui,
     sans-serif;
-  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "SF Mono", "Menlo",
-    "Consolas", monospace;
-  --font-pixel: "Workbench", "JetBrains Mono Variable", "JetBrains Mono",
+  --font-mono: "Space Mono", "JetBrains Mono", "SF Mono", "Menlo", "Consolas",
     monospace;
-  --font-dot: var(--font-pixel);
+  --font-display: "Doto Variable", "Doto", "Space Mono", monospace;
+  /* Aliases for components that reference the old names. */
+  --font-condensed: var(--font-sans);
+  --font-pixel: var(--font-display);
+  --font-dot: var(--font-display);
 
-  /* TYPE SCALE — apex multiples */
-  --fs-xs: 11px;
-  --fs-sm: 13px;
-  --fs-base: 15px;
-  --fs-md: 17px;
-  --fs-lg: 22px;
-  --fs-xl: 32px;
-  --fs-2xl: 48px;
-  --fs-3xl: 72px;
-  --fs-4xl: 112px;
-  --fs-mega: 168px;
+  /* TYPE SCALE */
+  --display-xl: 72px;
+  --display-lg: 48px;
+  --display-md: 36px;
+  --heading: 24px;
+  --subheading: 18px;
+  --body: 16px;
+  --body-sm: 14px;
+  --caption: 12px;
+  --label: 11px;
 
-  --lh-tight: 0.92;
-  --lh-snug: 1.2;
-  --lh-base: 1.45;
-  --lh-loose: 1.6;
-
-  --tracking-tight: -0.02em;
+  --tracking-tight: -0.03em;
   --tracking-base: 0;
   --tracking-wide: 0.08em;
   --tracking-mono: 0.04em;
 
-  /* SPACING — 4px grid */
-  --s-0: 0px;
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 20px;
-  --s-6: 24px;
-  --s-8: 32px;
-  --s-10: 40px;
-  --s-12: 48px;
-  --s-16: 64px;
-  --s-20: 80px;
-  --s-24: 96px;
+  /* SPACING — 8px base */
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
 
-  /* RADIUS — apex is hard-edged */
+  /* RADIUS — technical, near-square */
   --radius: 0;
   --r-0: 0px;
   --r-1: 2px;
@@ -125,75 +151,79 @@
   --bw-1: 1px;
   --bw-2: 2px;
 
-  /* MOTION — snappy, no bounces */
-  --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
-  --ease-in: cubic-bezier(0.6, 0, 0.8, 0.3);
-  --dur-fast: 120ms;
-  --dur-base: 200ms;
-  --dur-slow: 400ms;
+  /* MOTION — subtle ease-out, no spring */
+  --ease-out: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 350ms;
 
-  /* SHADCN SEMANTIC ALIASES — drive shadcn utilities through Apex tokens */
-  --background: var(--paper);
-  --foreground: var(--ink);
-  --card: var(--paper-0);
-  --card-foreground: var(--ink);
-  --popover: var(--paper-0);
-  --popover-foreground: var(--ink);
-  --primary: var(--orange);
-  --primary-foreground: var(--paper-0);
-  --secondary: var(--paper-1);
-  --secondary-foreground: var(--ink);
-  --muted: var(--paper-1);
-  --muted-foreground: var(--ink-3);
-  --accent: var(--orange-deep);
-  --accent-foreground: var(--paper-0);
-  --destructive: var(--signal-red);
-  --border: var(--ink);
-  --input: var(--paper-2);
-  --ring: var(--orange);
-  --chart-1: var(--orange);
-  --chart-2: var(--signal-amber);
-  --chart-3: var(--signal-green);
-  --chart-4: var(--signal-blue);
-  --chart-5: var(--signal-red);
-  --sidebar: var(--paper-0);
-  --sidebar-foreground: var(--ink);
-  --sidebar-primary: var(--orange);
-  --sidebar-primary-foreground: var(--paper-0);
-  --sidebar-accent: var(--paper-1);
-  --sidebar-accent-foreground: var(--ink);
-  --sidebar-border: var(--ink);
-  --sidebar-ring: var(--orange);
+  /* SHADCN SEMANTIC ALIASES — drive shadcn utilities through Nothing tokens.
+     Note: shadcn's `--accent` is its *hover surface*, so it maps to the raised
+     surface (NOT the red interrupt). The red lives in `--destructive`/`--ring`. */
+  --background: var(--black);
+  --foreground: var(--text-primary);
+  --card: var(--surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--text-display);
+  --primary-foreground: var(--surface);
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-raised);
+  --muted-foreground: var(--text-secondary);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--accent);
+  --border: var(--border-visible);
+  --input: var(--border-visible);
+  --ring: var(--accent);
+  --chart-1: var(--accent);
+  --chart-2: var(--warning);
+  --chart-3: var(--success);
+  --chart-4: var(--interactive);
+  --chart-5: var(--text-secondary);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--text-display);
+  --sidebar-primary-foreground: var(--surface);
+  --sidebar-accent: var(--surface-raised);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-visible);
+  --sidebar-ring: var(--accent);
 }
 
 @theme inline {
   --font-sans: var(--font-sans);
   --font-condensed: var(--font-condensed);
   --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
   --font-pixel: var(--font-pixel);
   --font-dot: var(--font-dot);
 
-  --color-paper: var(--paper);
-  --color-paper-0: var(--paper-0);
-  --color-paper-1: var(--paper-1);
-  --color-paper-2: var(--paper-2);
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
-  --color-ink-3: var(--ink-3);
-  --color-ink-ghost: var(--ink-ghost);
-  --color-orange: var(--orange);
-  --color-orange-deep: var(--orange-deep);
-  --color-orange-tint: var(--orange-tint);
-  --color-signal-red: var(--signal-red);
-  --color-signal-amber: var(--signal-amber);
-  --color-signal-green: var(--signal-green);
-  --color-signal-blue: var(--signal-blue);
+  --color-black: var(--black);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border-visible: var(--border-visible);
+  --color-text-display: var(--text-display);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-disabled: var(--text-disabled);
+  /* shadcn's `accent` utility = hover surface (raised), NOT the red interrupt.
+     The literal red is reachable as bg-accent-color / text-accent-color. */
+  --color-accent: var(--surface-raised);
+  --color-accent-color: var(--accent);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-interactive: var(--interactive);
 
-  /* Back-compat color aliases for any utility class still on the old names. */
+  /* Semantic + back-compat color utilities (bg-bg-1, text-fg-2, …). */
   --color-bg-0: var(--bg-0);
   --color-bg-1: var(--bg-1);
   --color-bg-2: var(--bg-2);
   --color-bg-3: var(--bg-3);
+  --color-fg-0: var(--fg-0);
   --color-fg-1: var(--fg-1);
   --color-fg-2: var(--fg-2);
   --color-fg-3: var(--fg-3);
@@ -201,13 +231,28 @@
   --color-border-1: var(--border-1);
   --color-border-2: var(--border-2);
   --color-border-3: var(--border-3);
-  --color-bf-orange: var(--orange);
-  --color-bf-orange-hot: var(--orange-tint);
-  --color-bf-orange-deep: var(--orange-deep);
-  --color-term-green: var(--signal-green);
-  --color-term-amber: var(--signal-amber);
-  --color-term-red: var(--signal-red);
-  --color-term-blue: var(--signal-blue);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-ghost: var(--ink-ghost);
+  --color-paper: var(--paper);
+  --color-paper-0: var(--paper-0);
+  --color-paper-1: var(--paper-1);
+  --color-paper-2: var(--paper-2);
+  --color-orange: var(--orange);
+  --color-orange-deep: var(--orange-deep);
+  --color-orange-tint: var(--orange-tint);
+  --color-bf-orange: var(--bf-orange);
+  --color-bf-orange-hot: var(--bf-orange-hot);
+  --color-bf-orange-deep: var(--bf-orange-deep);
+  --color-signal-red: var(--signal-red);
+  --color-signal-amber: var(--signal-amber);
+  --color-signal-green: var(--signal-green);
+  --color-signal-blue: var(--signal-blue);
+  --color-term-green: var(--term-green);
+  --color-term-amber: var(--term-amber);
+  --color-term-red: var(--term-red);
+  --color-term-blue: var(--term-blue);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -227,7 +272,6 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -260,46 +304,64 @@
   }
 
   body {
-    background: var(--paper);
-    color: var(--ink);
+    background: var(--bg-0);
+    color: var(--fg-1);
     font-family: var(--font-sans);
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 
   ::selection {
-    background: var(--orange);
-    color: var(--paper-0);
+    background: var(--accent);
+    color: #ffffff;
   }
 }
 
-@utility paper-grid {
+/* Nothing dot-matrix motif — decorative grid background. */
+@utility dot-grid {
   background-image: radial-gradient(
-    circle at 1px 1px,
-    rgba(17, 17, 17, 0.08) 1px,
-    transparent 0
+    circle,
+    var(--border-visible) 1px,
+    transparent 1px
   );
   background-size: 16px 16px;
 }
 
-@utility text-mega {
-  font-family: var(--font-sans);
-  font-weight: 800;
-  font-size: clamp(72px, 14vw, 168px);
-  letter-spacing: -0.025em;
-  line-height: 0.84;
-  text-transform: uppercase;
+@utility dot-grid-subtle {
+  background-image: radial-gradient(
+    circle,
+    var(--border) 0.5px,
+    transparent 0.5px
+  );
+  background-size: 12px 12px;
 }
 
-@utility eyebrow-chip {
+/* Back-compat alias for the old apex grid name. */
+@utility paper-grid {
+  background-image: radial-gradient(
+    circle,
+    var(--border-visible) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+}
+
+/* Doto dot-matrix display type — hero moments only (36px+). */
+@utility text-display-dot {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+}
+
+@utility eyebrow-label {
   display: inline-block;
   font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  background: var(--ink);
-  color: var(--paper-0);
-  padding: 4px 8px 3px;
+  color: var(--text-secondary);
   line-height: 1;
 }

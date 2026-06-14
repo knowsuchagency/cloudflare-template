@@ -2,38 +2,33 @@
 
 export function Footer() {
   return (
-    <footer className="border-t border-[var(--ink)] py-6">
-      {/* ASCII separator row — apex chrome */}
-      <div
-        aria-hidden="true"
-        className="mb-3 overflow-hidden font-mono text-[11px] tracking-[0.04em] text-[var(--ink-ghost)] whitespace-nowrap"
-      >
-        {"*".repeat(220)}
-      </div>
+    <footer className="border-t border-[var(--border-1)] py-8">
+      {/* Dot-matrix separator — Nothing motif */}
+      <div aria-hidden="true" className="dot-grid-subtle mb-6 h-6 w-full" />
 
       {/* Single mono footer row, uppercase, ghosted */}
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 font-mono text-[10px] tracking-[0.08em] uppercase text-[var(--ink-ghost)]">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-3)]">
         <span>
-          (c) {new Date().getFullYear()} · {{ app_title }} · FUTURE OPERATIONS DEPARTMENT
+          (c) {new Date().getFullYear()} · {{ app_title }} · BUILT ON CLOUDFLARE WORKERS
         </span>
         <span className="flex items-center gap-3">
-          <a href="#" className="hover:text-[var(--ink)]">
+          <a href="#" className="hover:text-[var(--fg-1)]">
             PRIVACY
           </a>
           <span aria-hidden>·</span>
-          <a href="#" className="hover:text-[var(--ink)]">
+          <a href="#" className="hover:text-[var(--fg-1)]">
             SECURITY
           </a>
           <span aria-hidden>·</span>
-          <a href="#" className="hover:text-[var(--ink)]">
+          <a href="#" className="hover:text-[var(--fg-1)]">
             CHANGELOG
           </a>
           <span aria-hidden>·</span>
-          <a href="#" className="hover:text-[var(--ink)]">
+          <a href="#" className="hover:text-[var(--fg-1)]">
             STATUS
           </a>
           <span aria-hidden>·</span>
-          <a href="#" className="hover:text-[var(--ink)]">
+          <a href="#" className="hover:text-[var(--fg-1)]">
             GITHUB
           </a>
         </span>
