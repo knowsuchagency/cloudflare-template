@@ -70,15 +70,10 @@ export function Login() {
             />
           </Field>
           <Field data-invalid={error ? true : undefined}>
-            <div className="flex items-center justify-between gap-2">
-              <FieldLabel htmlFor="signin-password">Password</FieldLabel>
-              <Link
-                to="/forgot-password"
-                className="text-xs text-[var(--fg-3)] underline-offset-4 hover:text-[var(--bf-orange)] hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
+            {/* Input comes first in the DOM so Tab from the email field lands
+                on the password (not the "Forgot password?" link); CSS `order`
+                keeps the label + link row rendered above it. Tab order follows
+                DOM order, not visual order — don't reorder these back. */}
             <Input
               id="signin-password"
               type="password"
@@ -87,8 +82,18 @@ export function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               aria-invalid={error ? true : undefined}
+              className="order-2"
             />
-            <FieldError>{error}</FieldError>
+            <div className="order-1 flex items-center justify-between gap-2">
+              <FieldLabel htmlFor="signin-password">Password</FieldLabel>
+              <Link
+                to="/forgot-password"
+                className="text-xs text-[var(--fg-3)] underline-offset-4 hover:text-[var(--bf-orange)] hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <FieldError className="order-3">{error}</FieldError>
           </Field>
           <Button type="submit" disabled={signIn.isPending} className="w-full">
             {signIn.isPending ? <Loader className="animate-spin" /> : <LogIn />}
