@@ -11,9 +11,14 @@ The root contains `copier.yml` and a `template/` subdirectory. Generated project
 - The currently templatized files are:
   `template/package.json.jinja`, `template/wrangler.jsonc.jinja`,
   `template/web/package.json.jinja`, `template/web/index.html.jinja`,
-  `template/web/src/components/login-card.tsx.jinja`,
+  `template/web/src/pages/login.tsx.jinja`,
+  `template/web/src/pages/signup.tsx.jinja`,
+  `template/web/src/pages/forgot-password.tsx.jinja`,
+  `template/web/src/pages/reset-password.tsx.jinja`,
   `template/src/lib/better-auth/options.ts.jinja`,
+  `template/src/lib/email/reset-password.ts.jinja`,
   `template/CLAUDE.md.jinja`
+  (run `find template -name '*.jinja'` for the authoritative, current set)
 
 If you need to inject a new variable somewhere, add it to `copier.yml` questions and rename the target file with a `.jinja` suffix (`git mv`) before editing. Copier's default template suffix is configured as `.jinja` — files without the suffix are NOT rendered, even if they contain `{{ }}`.
 

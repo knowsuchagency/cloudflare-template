@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/sonner"
 import { Landing } from "@/pages/landing"
 import { Login } from "@/pages/login"
 import { Signup } from "@/pages/signup"
+import { ForgotPassword } from "@/pages/forgot-password"
+import { ResetPassword } from "@/pages/reset-password"
 import { AppPage } from "@/pages/app"
 import { Chat } from "@/pages/chat"
 
@@ -27,6 +29,22 @@ export function App() {
           element={
             <RequireGuest>
               <Signup />
+            </RequireGuest>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <RequireGuest>
+              <ForgotPassword />
+            </RequireGuest>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <RequireGuest>
+              <ResetPassword />
             </RequireGuest>
           }
         />

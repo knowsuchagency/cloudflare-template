@@ -28,6 +28,10 @@ export default defineConfig(async () => {
     ],
     test: {
       setupFiles: ["./test/setup.ts"],
+      // Password hashing (scrypt) under workerd is slow, and multi-step e2e
+      // flows (e.g. test/password-reset.test.ts) chain several hashing requests
+      // — the 5s default times out on slower CI runners.
+      testTimeout: 20_000,
     },
   };
 });

@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../../db/schema";
 import { betterAuthOptions } from "./options";
+import { sendPasswordResetEmail } from "../email/reset-password";
 
 /**
  * Better Auth's CSRF check rejects any request whose Origin doesn't match
@@ -62,6 +63,22 @@ export const auth = (env: Env) => {
 
   return betterAuth({
     ...betterAuthOptions,
+    // `sendResetPassword` is the seam that enables the forgot-password flow:
+    // Better Auth refuses /request-password-reset unless this is set. It needs
+    // `env` (for the EMAIL binding), so it's wired here in the env-scoped
+    // factory rather than in the static `betterAuthOptions`. Uses the existing
+    // `verification` table — no schema change.
+    emailAndPassword: {
+      ...betterAuthOptions.emailAndPassword,
+      enabled: true,
+      sendResetPassword: async ({ user, url }) => {
+        await sendPasswordResetEmail(env, {
+          to: user.email,
+          url,
+          name: user.name,
+        });
+      },
+    },
     database: drizzleAdapter(db, { provider: "sqlite", schema }),
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,

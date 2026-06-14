@@ -14,6 +14,12 @@
   // `remote: true` makes that "always hits remote" contract explicit and
   // silences wrangler's local-dev warning.
   "ai": { "binding": "AI", "remote": true },
+  // Cloudflare Email Sending binding — powers the password-reset email
+  // (src/lib/email/reset-password.ts). No API keys: sends ride the native
+  // binding. The `EMAIL_FROM` address's domain must be onboarded once with
+  // `wrangler email sending enable <domain>` (or the dashboard) before sends
+  // succeed.
+  "send_email": [{ "name": "EMAIL" }],
   "d1_databases": [
     {
       "binding": "DB",
@@ -29,7 +35,10 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    "BETTER_AUTH_URL": "http://localhost:8787"{% if cloudflare_account_subdomain %},
+    "BETTER_AUTH_URL": "http://localhost:8787",
+    // Sender for transactional email (password reset). Change this to an
+    // address on a domain you've onboarded to Cloudflare Email Sending.
+    "EMAIL_FROM": "noreply@example.com"{% if cloudflare_account_subdomain %},
     // Workers Builds preview URLs (`<version>-{{ worker_name }}.<sub>.workers.dev`)
     // are siblings of the prod URL under the same account subdomain. Seeding the
     // wildcard here means auth works on previews even before `mise run deploy`
@@ -70,12 +79,14 @@
       // top-level config grows.
       "routes": [],
       "vars": {
-        "BETTER_AUTH_URL": "http://localhost:8787"{% if cloudflare_account_subdomain %},
+        "BETTER_AUTH_URL": "http://localhost:8787",
+        "EMAIL_FROM": "noreply@example.com"{% if cloudflare_account_subdomain %},
         "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %}
       },
-      // Bindings are not inherited by named environments — redeclare AI here
-      // so the preview Worker can serve /api/chat too.
+      // Bindings are not inherited by named environments — redeclare AI and the
+      // Email Sending binding here so the preview Worker matches prod.
       "ai": { "binding": "AI", "remote": true },
+      "send_email": [{ "name": "EMAIL" }],
       "d1_databases": [
         {
           "binding": "DB",

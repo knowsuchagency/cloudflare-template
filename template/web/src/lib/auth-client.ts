@@ -46,4 +46,18 @@ export const authClient = {
       method: "POST",
       body: "{}",
     }),
+  // Better Auth always answers 200 with a generic message (anti-enumeration),
+  // so a resolved promise just means "request accepted", not "email on file".
+  // `redirectTo` is the SPA page the reset link lands on; Better Auth appends
+  // `?token=...` (or `?error=INVALID_TOKEN`) to it.
+  requestPasswordReset: (body: { email: string; redirectTo: string }) =>
+    request<{ status: boolean; message: string }>(
+      "/api/auth/request-password-reset",
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  resetPassword: (body: { newPassword: string; token: string }) =>
+    request<{ status: boolean }>("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 }
