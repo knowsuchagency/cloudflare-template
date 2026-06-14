@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ── Design system token layer ───────────────────────────────────────────────
+   The whole look (palette, fonts, radius, motion) lives in one of the token
+   files under ./styles. This project was generated with `design_system =
+   {{ design_system }}`. All three token files ship in ./styles, so you can swap
+   the look later by changing the import below to nothing | apex | onyx — just
+   add that system's fonts to web/package.json (see the @import lines at the top
+   of each token file). The shared components consume semantic tokens, so no
+   component edits are needed to switch.
+   ──────────────────────────────────────────────────────────────────────────── */
+@import "./styles/{{ design_system }}.css";

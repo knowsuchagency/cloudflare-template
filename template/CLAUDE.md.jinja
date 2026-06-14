@@ -35,6 +35,10 @@ web/               # Vite React SPA (shadcn preset buFznsW, radix-lyra, phosphor
 
 Worker serves the SPA through the `assets` binding with `not_found_handling: single-page-application`. `run_worker_first: ["/api/*"]` gates the Worker in front of the assets handler for API routes.
 
+## Design system
+
+This project was generated with the **{{ design_system }}** design system. The look lives entirely in a token layer: `web/src/index.css` imports `web/src/styles/{{ design_system }}.css` (palette, fonts, radius, motion as CSS custom properties + a shadcn `@theme` mapping). Components consume semantic tokens (`--bg-0`, `--fg-1`, `--accent`, `--font-display`, …), so the design system swaps without touching component code. All three (`nothing`, `apex`, `onyx`) ship under `web/src/styles/` and are dual-mode — every color is `light-dark(…)`, defaulting to the OS with a System/Light/Dark toggle (`web/src/components/theme-toggle.tsx`, applied as `data-theme` on `<html>`; a pre-paint script in `index.html` avoids FOUC). To switch later: change the import in `index.css` and add that system's fonts to `web/package.json` (see the `@import` lines at the top of each token file).
+
 ## AI chat
 
 `POST /api/chat` is a streaming chatbot built on the `AI` binding (Workers AI), routed through the **`default` AI Gateway** for caching/observability. It uses the Vercel AI SDK: `streamText` + `workers-ai-provider`'s `createWorkersAI({ binding, gateway: { id: "default" } })` server-side (model `@cf/meta/llama-4-scout-17b-16e-instruct`), and `useChat` from `@ai-sdk/react` in `web/src/pages/chat.tsx`.

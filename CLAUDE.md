@@ -11,6 +11,7 @@ The root contains `copier.yml` and a `template/` subdirectory. Generated project
 - The currently templatized files are:
   `template/package.json.jinja`, `template/wrangler.jsonc.jinja`,
   `template/web/package.json.jinja`, `template/web/index.html.jinja`,
+  `template/web/src/index.css.jinja`,
   `template/web/src/pages/login.tsx.jinja`,
   `template/web/src/pages/signup.tsx.jinja`,
   `template/web/src/pages/forgot-password.tsx.jinja`,

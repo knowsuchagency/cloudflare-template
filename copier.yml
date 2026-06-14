@@ -74,6 +74,18 @@ app_tagline:
   help: "One-line description shown under the app title in the login card."
   default: "Hono worker, Drizzle adapter, Cloudflare D1."
 
+design_system:
+  type: str
+  help: |
+    Visual design system for the generated SPA. All three ship in
+    web/src/styles/ — you can switch later by editing the import in
+    web/src/index.css (and adding that system's fonts to web/package.json).
+  default: nothing
+  choices:
+    "Nothing — monochrome instrument panel, Doto dot-matrix display, red accent (dark + light)": nothing
+    "Apex — warm industrial paper, Archivo + JetBrains Mono, vermilion accent (dark + light)": apex
+    "Onyx — polished obsidian, Geist + Fraunces serif, sapphire accent (dark + light)": onyx
+
 worker_name:
   type: str
   help: "Cloudflare Worker name (appears in *.workers.dev subdomain)."
