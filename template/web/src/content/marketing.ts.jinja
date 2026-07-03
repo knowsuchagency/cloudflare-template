@@ -1,0 +1,241 @@
+// ─── MARKETING CONTENT — EDIT THIS FILE FIRST ────────────────────────────────
+// Every section of the landing page reads from this object. To make the page
+// yours: rewrite the copy here, top to bottom, before touching any component.
+// Sections hide themselves when their content is empty (e.g. an empty
+// `testimonials` array renders nothing — never ship fake social proof).
+//
+// Copy guidance (CRO):
+// - `hero.headline` is the value proposition, not your brand name — the visitor
+//   should learn what they GET, in their own vocabulary. Outcome > mechanism.
+// - One primary CTA, repeated (hero → pricing → final band). Everything else
+//   is secondary.
+// - `benefits` lead with the outcome; the mono `caption` carries the spec.
+// - Keep a risk-reversal line ("free tier · no credit card") beside every CTA.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type Cta = { label: string; to: string }
+
+export type MarketingContent = {
+  hero: {
+    /** Mono instrument label, top-left (decorative). */
+    eyebrow?: string
+    /** Mono label, top-right (decorative). */
+    eyebrowMeta?: string
+    /** The mega-type value proposition. Short lines, outcome-first. */
+    headline: string
+    /** One or two sentences under the headline. */
+    subhead: string
+    /** Optional supporting paragraph. */
+    body?: string
+    cta: Cta
+    /** Secondary, low-emphasis link (e.g. anchor to pricing). */
+    secondaryCta?: Cta
+    /** Trust line rendered beside the CTA. */
+    riskReversal?: string
+    /** Mono metadata segments that scramble in. Decorative texture. */
+    metadata?: string[]
+    /** Hero proof artifact: "terminal" = install block + system log (dev
+     * products); "none" = hide (swap in your own screenshot/demo). */
+    proof: "terminal" | "none"
+  }
+  /** Marquee tape items. Empty array hides the ticker. */
+  ticker: string[]
+  benefits: { title: string; body: string; caption: string }[]
+  howItWorks?: {
+    heading: string
+    steps: { title: string; body: string }[]
+  }
+  stats: {
+    value: number
+    decimals?: number
+    prefix?: string
+    suffix?: string
+    label: string
+  }[]
+  /** Logos + testimonials. Both empty → section hidden. Fill with REAL proof. */
+  socialProof: {
+    heading?: string
+    logos: { name: string; href?: string }[]
+    testimonials: { quote: string; name: string; role?: string }[]
+  }
+  pricing?: {
+    heading: string
+    subhead?: string
+    plans: {
+      name: string
+      price: string
+      cadence?: string
+      description?: string
+      features: string[]
+      cta: Cta
+      featured?: boolean
+      badge?: string
+    }[]
+    footnote?: string
+  }
+  faq?: {
+    heading: string
+    items: { q: string; a: string }[]
+  }
+  finalCta: {
+    eyebrow?: string
+    headline: string
+    cta: Cta
+    caption?: string
+  }
+}
+
+// Default content sells this starter itself. Replace it with copy about YOUR
+// product — the structure below is the checklist.
+export const marketing: MarketingContent = {
+  hero: {
+    eyebrow: "EXPERIMENTAL SYSTEMS",
+    eyebrowMeta: "EST · 2026",
+    headline: "Idea to paid app in one deploy.",
+    subhead: "{{ app_tagline }}",
+    body: "A typed full-stack starter on Cloudflare Workers: Better Auth on D1, streaming Workers AI chat, and Stripe billing with a free tier — wired, metered, and ready to charge.",
+    cta: { label: "GET STARTED", to: "/signup" },
+    secondaryCta: { label: "SEE PRICING", to: "#pricing" },
+    riskReversal: "FREE TIER · NO CREDIT CARD",
+    metadata: ["EDGE BUNDLE · WORKERS V4", "HONO · REACT · D1", "BUILD 0001"],
+    proof: "terminal",
+  },
+
+  ticker: [
+    "HONO",
+    "REACT 19",
+    "CLOUDFLARE WORKERS",
+    "D1 SQLITE",
+    "DRIZZLE ORM",
+    "BETTER AUTH",
+    "WORKERS AI",
+    "STRIPE BILLING",
+    "VITE",
+    "TAILWIND 4",
+  ],
+
+  benefits: [
+    {
+      title: "LIVE EVERYWHERE, INSTANTLY",
+      body: "One command deploys to 330+ cities. Cold starts in single-digit milliseconds, wherever your users are.",
+      caption: "cf workers · hono",
+    },
+    {
+      title: "USERS FROM DAY ONE",
+      body: "Sign-up, sign-in, and password reset already wired — Better Auth on D1 with secure cookies.",
+      caption: "better-auth · d1",
+    },
+    {
+      title: "AI YOU CAN CHARGE FOR",
+      body: "Streaming chat on Workers AI, metered per token straight into Stripe. Usage becomes revenue, not surprise cost.",
+      caption: "workers ai · stripe",
+    },
+    {
+      title: "SHIP ON FRIDAYS",
+      body: "Every PR gets a sibling Worker + database. Test the migration before it ever touches main.",
+      caption: "workers builds",
+    },
+  ],
+
+  howItWorks: {
+    heading: "HOW IT WORKS",
+    steps: [
+      {
+        title: "GENERATE",
+        body: "One copier command renders a typed monorepo — worker, SPA, schema, migrations — under your name.",
+      },
+      {
+        title: "DEPLOY",
+        body: "mise deploy puts it on your *.workers.dev subdomain. Auth and AI chat work immediately.",
+      },
+      {
+        title: "CHARGE",
+        body: "stripe:bootstrap creates the meter and Pro prices. Flip the key and the free tier starts upselling.",
+      },
+    ],
+  },
+
+  stats: [
+    { value: 5, prefix: "<", suffix: "ms", label: "COLD START ON THE EDGE" },
+    { value: 330, suffix: "+", label: "CITIES IN CLOUDFLARE'S NETWORK" },
+    { value: 1, label: "COMMAND TO DEPLOY" },
+    { value: 0, prefix: "$", label: "TO START — FREE TIER INCLUDED" },
+  ],
+
+  // Ship real proof or none at all. Both arrays empty → section hidden.
+  socialProof: {
+    heading: "OPERATORS' NOTES",
+    logos: [],
+    testimonials: [],
+  },
+
+  // Defaults mirror the built-in billing (src/lib/billing/constants.ts +
+  // scripts/stripe-bootstrap.ts). If you change the plan shape there, keep
+  // this section honest.
+  pricing: {
+    heading: "PRICING",
+    subhead: "Start free. Upgrade when your usage does.",
+    plans: [
+      {
+        name: "FREE",
+        price: "$0",
+        cadence: "/month",
+        description: "Everything you need to launch and find your first users.",
+        features: [
+          "Email + password auth",
+          "50,000 AI tokens / month",
+          "Full app on *.workers.dev",
+          "Community support",
+        ],
+        cta: { label: "START FREE", to: "/signup" },
+      },
+      {
+        name: "PRO",
+        price: "$20",
+        cadence: "/month",
+        description: "For products with real traffic and real AI usage.",
+        features: [
+          "Everything in Free",
+          "1,000,000 AI tokens included",
+          "$5 per additional 1M tokens",
+          "Usage-based billing via Stripe",
+          "Cancel any time",
+        ],
+        cta: { label: "GET STARTED", to: "/signup" },
+        featured: true,
+        badge: "MOST POPULAR",
+      },
+    ],
+    footnote:
+      "Prices are the template defaults created by `mise run stripe:bootstrap` — change them in scripts/stripe-bootstrap.ts and update this section to match.",
+  },
+
+  faq: {
+    heading: "QUESTIONS",
+    items: [
+      {
+        q: "Do I need a Cloudflare account?",
+        a: "Yes — the free plan is enough. Workers, D1, and Workers AI all have generous free allowances; the template deploys to your *.workers.dev subdomain out of the box.",
+      },
+      {
+        q: "What does it cost to run?",
+        a: "Nothing to start. The stack sits comfortably inside Cloudflare's free tier for side-project traffic, and billing is dormant until you add a Stripe key.",
+      },
+      {
+        q: "Can I change how it looks?",
+        a: "The entire look is a token file — three design systems ship in web/src/styles/ and swap with a one-line import change. Components never hardcode colors.",
+      },
+      {
+        q: "Is the AI usage really metered?",
+        a: "Every streamed response reports its token count to a D1 ledger, and for subscribers to a Stripe Billing Meter. Free users are cut off at their monthly allotment automatically.",
+      },
+    ],
+  },
+
+  finalCta: {
+    eyebrow: "DEPLOY NOW",
+    headline: "Ship it to the edge tonight.",
+    cta: { label: "GET STARTED", to: "/signup" },
+    caption: "NO CREDIT CARD · FREE TIER",
+  },
+}

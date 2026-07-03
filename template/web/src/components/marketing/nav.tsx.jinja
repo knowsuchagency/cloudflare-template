@@ -1,5 +1,3 @@
-// biome-ignore-all lint/a11y/useValidAnchor: DOCS is an intentional placeholder link in the template; wire up a real href per project
-
 import { Link } from "react-router"
 
 import { Button } from "@/components/ui/button"
@@ -22,28 +20,26 @@ export function Nav() {
         </a>
         <span aria-hidden className="hidden text-[var(--fg-3)] sm:inline">·</span>
         <a
-          href="#"
+          href="#pricing"
           className="hidden text-[var(--fg-2)] no-underline transition-colors duration-150 hover:text-[var(--fg-0)] sm:inline"
         >
-          DOCS
+          PRICING
         </a>
         <span aria-hidden className="hidden text-[var(--fg-3)] sm:inline">·</span>
         <a
-          href="https://github.com"
-          target="_blank"
-          rel="noreferrer"
+          href="#faq"
           className="hidden text-[var(--fg-2)] no-underline transition-colors duration-150 hover:text-[var(--fg-0)] sm:inline"
         >
-          GITHUB
+          FAQ
         </a>
         <ThemeToggle />
         <Button variant="outline" size="sm" asChild>
           <Link to="/login">SIGN IN</Link>
         </Button>
-        {/* Monochrome here so the hero's GET STARTED owns the page's one red. */}
+        {/* Monochrome here so the hero's CTA owns the page's one accent. */}
         <Button variant="default" size="sm" asChild>
           <Link to="/signup">
-            SIGN UP <span aria-hidden>→</span>
+            GET STARTED <span aria-hidden>→</span>
           </Link>
         </Button>
       </div>

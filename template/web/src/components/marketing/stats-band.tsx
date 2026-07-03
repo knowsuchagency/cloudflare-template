@@ -3,23 +3,13 @@
 
 import { CountUp } from "@/components/motion/count-up"
 import { Reveal } from "@/components/motion/reveal"
+import { marketing } from "@/content/marketing"
 
-type Stat = {
-  value: number
-  decimals?: number
-  prefix?: string
-  suffix?: string
-  label: string
-}
-
-const STATS: Stat[] = [
-  { value: 5, prefix: "<", suffix: "ms", label: "COLD START ON THE EDGE" },
-  { value: 330, suffix: "+", label: "CITIES IN CLOUDFLARE'S NETWORK" },
-  { value: 1, label: "COMMAND TO DEPLOY" },
-  { value: 0, prefix: "$", label: "TO START — FREE TIER INCLUDED" },
-]
+const STATS = marketing.stats
 
 export function StatsBand() {
+  if (STATS.length === 0) return null
+
   return (
     <section className="grid grid-cols-2 border-t border-[var(--border-1)] lg:grid-cols-4">
       {STATS.map((stat, i) => (

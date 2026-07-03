@@ -1,22 +1,15 @@
 // Stack ticker — an industrial conveyor tape between hero and features.
 // Pure CSS marquee (no WebGL): mono, uppercase, ghosted, hard borders.
 // Inspired by react-bits LogoLoop; freezes under prefers-reduced-motion.
+// Items come from the content file; an empty list hides the tape.
 
-const ITEMS = [
-  "HONO",
-  "REACT 19",
-  "CLOUDFLARE WORKERS",
-  "D1 SQLITE",
-  "DRIZZLE ORM",
-  "BETTER AUTH",
-  "WORKERS AI",
-  "STRIPE BILLING",
-  "VITE",
-  "TAILWIND 4",
-]
+import { marketing } from "@/content/marketing"
 
 export function Ticker() {
-  const row = ITEMS.map((item) => (
+  const items = marketing.ticker
+  if (items.length === 0) return null
+
+  const row = items.map((item) => (
     <span key={item} className="flex items-center gap-8">
       <span>{item}</span>
       <span aria-hidden="true" className="text-[var(--accent)]">
@@ -28,7 +21,7 @@ export function Ticker() {
   return (
     <div
       role="marquee"
-      aria-label={ITEMS.join(", ")}
+      aria-label={items.join(", ")}
       className="relative flex overflow-hidden border-y border-[var(--border-1)] bg-[var(--bg-1)] py-3"
     >
       <style>{`

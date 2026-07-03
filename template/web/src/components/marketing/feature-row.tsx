@@ -1,34 +1,10 @@
 import { Reveal } from "@/components/motion/reveal"
 import { SpotlightCard } from "@/components/marketing/spotlight-card"
+import { marketing } from "@/content/marketing"
 
-type Feature = {
-  title: string
-  body: string
-  caption: string
-}
-
-const FEATURES: Feature[] = [
-  {
-    title: "EDGE-FIRST RUNTIME",
-    body: "Hono on Cloudflare Workers. Cold start in single-digit ms, anywhere your users are.",
-    caption: "cf workers · v4",
-  },
-  {
-    title: "EMAIL + PASSWORD AUTH",
-    body: "Better Auth wired to D1 with secure cookies. Sign-up and sign-in out of the box.",
-    caption: "better-auth · d1",
-  },
-  {
-    title: "D1 + DRIZZLE READY",
-    body: "SQLite at the edge, type-safe queries, migrations on deploy. No ORM cliffs.",
-    caption: "sqlite · drizzle-orm",
-  },
-  {
-    title: "PREVIEW PER BRANCH",
-    body: "Workers Builds spins up a sibling Worker + D1 for every PR. Test the migration before main.",
-    caption: "workers builds",
-  },
-]
+// Benefit cards — outcome-led copy from the content file; the mono caption
+// carries the spec. Spotlight hover + staggered scroll reveal.
+const FEATURES = marketing.benefits
 
 export function FeatureRow() {
   return (
