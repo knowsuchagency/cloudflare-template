@@ -9,8 +9,10 @@
 //   should learn what they GET, in their own vocabulary. Outcome > mechanism.
 // - One primary CTA, repeated (hero → pricing → final band). Everything else
 //   is secondary.
-// - `benefits` lead with the outcome; the mono `caption` carries the spec.
+// - `benefits` lead with the outcome; the mono `caption` carries the garnish.
 // - Keep a risk-reversal line ("free tier · no credit card") beside every CTA.
+// - Speak to END USERS. Implementation details (the stack, the repo, deploy
+//   commands) belong in the README and CLAUDE.md, not on this page.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type Cta = { label: string; to: string }
@@ -86,59 +88,63 @@ export type MarketingContent = {
     cta: Cta
     caption?: string
   }
+  footer: {
+    /** Legal / support links. Wire real hrefs per project. */
+    links: { label: string; href: string }[]
+    /** Small mono stamp on the right (e.g. a version marker). */
+    note?: string
+  }
 }
 
-// Default content sells this starter itself. Replace it with copy about YOUR
-// product — the structure below is the checklist.
+// The defaults below describe the generated product (an AI assistant with
+// accounts and usage-based billing) to its END USERS — no stack names, no
+// repo links. Replace the copy with your product's story.
 export const marketing: MarketingContent = {
   hero: {
     eyebrow: "EXPERIMENTAL SYSTEMS",
     eyebrowMeta: "EST · 2026",
-    headline: "Idea to paid app in one deploy.",
+    headline: "Your AI assistant. Always on.",
     subhead: "{{ app_tagline }}",
-    body: "A typed full-stack starter on Cloudflare Workers: Better Auth on D1, streaming Workers AI chat, and Stripe billing with a free tier — wired, metered, and ready to charge.",
+    body: "Create an account in seconds and start a conversation instantly — answers stream in live, served from the city nearest you. Start free; pay only when your usage grows.",
     cta: { label: "GET STARTED", to: "/signup" },
     secondaryCta: { label: "SEE PRICING", to: "#pricing" },
     riskReversal: "FREE TIER · NO CREDIT CARD",
-    metadata: ["EDGE BUNDLE · WORKERS V4", "HONO · REACT · D1", "BUILD 0001"],
+    metadata: ["ALWAYS ON · EVERYWHERE", "STREAMING RESPONSES", "V 1.0"],
     // Swap in a real product shot once you have one:
     // proof: { mode: "image", src: "/proof.png", alt: "Screenshot of …", caption: "LIVE PRODUCT" },
     proof: { mode: "none" },
   },
 
   ticker: [
-    "HONO",
-    "REACT 19",
-    "CLOUDFLARE WORKERS",
-    "D1 SQLITE",
-    "DRIZZLE ORM",
-    "BETTER AUTH",
-    "WORKERS AI",
-    "STRIPE BILLING",
-    "VITE",
-    "TAILWIND 4",
+    "INSTANT ANSWERS",
+    "STREAMING RESPONSES",
+    "SECURE ACCOUNTS",
+    "FAIR PRICING",
+    "START FREE",
+    "CANCEL ANYTIME",
+    "ALWAYS ON",
   ],
 
   benefits: [
     {
-      title: "LIVE EVERYWHERE, INSTANTLY",
-      body: "One command deploys to 330+ cities. Cold starts in single-digit milliseconds, wherever your users are.",
-      caption: "cf workers · hono",
+      title: "FAST FROM ANYWHERE",
+      body: "Served from 330+ cities worldwide, so answers start streaming before you finish the thought.",
+      caption: "global · low-latency",
     },
     {
-      title: "USERS FROM DAY ONE",
-      body: "Sign-up, sign-in, and password reset already wired — Better Auth on D1 with secure cookies.",
-      caption: "better-auth · d1",
+      title: "YOUR ACCOUNT, SECURED",
+      body: "Email + password sign-in with encrypted sessions, and a reset flow that actually works.",
+      caption: "secure sessions",
     },
     {
-      title: "AI YOU CAN CHARGE FOR",
-      body: "Streaming chat on Workers AI, metered per token straight into Stripe. Usage becomes revenue, not surprise cost.",
-      caption: "workers ai · stripe",
+      title: "AI ON TAP",
+      body: "Ask anything, watch the answer stream in real time. No queues, no waiting rooms.",
+      caption: "streaming ai",
     },
     {
-      title: "SHIP ON FRIDAYS",
-      body: "Every PR gets a sibling Worker + database. Test the migration before it ever touches main.",
-      caption: "workers builds",
+      title: "PAY FOR WHAT YOU USE",
+      body: "A generous free allotment every month. Upgrade when you need more, cancel anytime.",
+      caption: "usage-based",
     },
   ],
 
@@ -146,25 +152,25 @@ export const marketing: MarketingContent = {
     heading: "HOW IT WORKS",
     steps: [
       {
-        title: "GENERATE",
-        body: "One copier command renders a typed monorepo — worker, SPA, schema, migrations — under your name.",
+        title: "SIGN UP",
+        body: "Create your account in under a minute. The free tier is included — no card required.",
       },
       {
-        title: "DEPLOY",
-        body: "mise deploy puts it on your *.workers.dev subdomain. Auth and AI chat work immediately.",
+        title: "ASK",
+        body: "Start chatting immediately. Responses stream in live and your history stays with your account.",
       },
       {
-        title: "CHARGE",
-        body: "stripe:bootstrap creates the meter and Pro prices. Flip the key and the free tier starts upselling.",
+        title: "SCALE",
+        body: "Hit the free ceiling? Upgrade to Pro in two clicks and keep going. Cancel anytime.",
       },
     ],
   },
 
   stats: [
-    { value: 5, prefix: "<", suffix: "ms", label: "COLD START ON THE EDGE" },
-    { value: 330, suffix: "+", label: "CITIES IN CLOUDFLARE'S NETWORK" },
-    { value: 1, label: "COMMAND TO DEPLOY" },
-    { value: 0, prefix: "$", label: "TO START — FREE TIER INCLUDED" },
+    { value: 50, prefix: "<", suffix: "ms", label: "TYPICAL RESPONSE START" },
+    { value: 330, suffix: "+", label: "CITIES SERVING YOU" },
+    { value: 24, suffix: "/7", label: "ALWAYS ON" },
+    { value: 0, prefix: "$", label: "TO START — FREE EVERY MONTH" },
   ],
 
   // Ship real proof or none at all. Both arrays empty → section hidden.
@@ -174,9 +180,9 @@ export const marketing: MarketingContent = {
     testimonials: [],
   },
 
-  // Defaults mirror the built-in billing (src/lib/billing/constants.ts +
-  // scripts/stripe-bootstrap.ts). If you change the plan shape there, keep
-  // this section honest.
+  // DEV NOTE: these plans must mirror the built-in billing
+  // (src/lib/billing/constants.ts + scripts/stripe-bootstrap.ts). If you
+  // change the plan shape there, keep this section honest.
   pricing: {
     heading: "PRICING",
     subhead: "Start free. Upgrade when your usage does.",
@@ -185,12 +191,12 @@ export const marketing: MarketingContent = {
         name: "FREE",
         price: "$0",
         cadence: "/month",
-        description: "Everything you need to launch and find your first users.",
+        description: "Everything you need to get started, free every month.",
         features: [
-          "Email + password auth",
-          "50,000 AI tokens / month",
-          "Full app on *.workers.dev",
-          "Community support",
+          "Secure account & sign-in",
+          "50,000 AI tokens every month",
+          "Streaming chat",
+          "Zero setup",
         ],
         cta: { label: "START FREE", to: "/signup" },
       },
@@ -198,12 +204,12 @@ export const marketing: MarketingContent = {
         name: "PRO",
         price: "$20",
         cadence: "/month",
-        description: "For products with real traffic and real AI usage.",
+        description: "For daily use — more headroom, same speed.",
         features: [
           "Everything in Free",
           "1,000,000 AI tokens included",
           "$5 per additional 1M tokens",
-          "Usage-based billing via Stripe",
+          "Pay only for what you use",
           "Cancel any time",
         ],
         cta: { label: "GET STARTED", to: "/signup" },
@@ -212,35 +218,44 @@ export const marketing: MarketingContent = {
       },
     ],
     footnote:
-      "Prices are the template defaults created by `mise run stripe:bootstrap` — change them in scripts/stripe-bootstrap.ts and update this section to match.",
+      "Prices in USD. Cancel anytime — you keep Pro until the end of the paid period.",
   },
 
   faq: {
     heading: "QUESTIONS",
     items: [
       {
-        q: "Do I need a Cloudflare account?",
-        a: "Yes — the free plan is enough. Workers, D1, and Workers AI all have generous free allowances; the template deploys to your *.workers.dev subdomain out of the box.",
+        q: "Is there a free plan?",
+        a: "Yes — every account includes 50,000 AI tokens each month, free. No credit card required to sign up.",
       },
       {
-        q: "What does it cost to run?",
-        a: "Nothing to start. The stack sits comfortably inside Cloudflare's free tier for side-project traffic, and billing is dormant until you add a Stripe key.",
+        q: "What happens when I hit the free limit?",
+        a: "Chat pauses until your allotment resets next month — or upgrade to Pro and keep going immediately. You're never billed by surprise.",
       },
       {
-        q: "Can I change how it looks?",
-        a: "The entire look is a token file — three design systems ship in web/src/styles/ and swap with a one-line import change. Components never hardcode colors.",
+        q: "Can I cancel Pro anytime?",
+        a: "Yes. Cancel in one click from the billing page. You keep Pro access until the end of the period you've paid for.",
       },
       {
-        q: "Is the AI usage really metered?",
-        a: "Every streamed response reports its token count to a D1 ledger, and for subscribers to a Stripe Billing Meter. Free users are cut off at their monthly allotment automatically.",
+        q: "Is my data private?",
+        a: "Your conversations belong to your account alone, behind encrypted sessions. We don't sell your data.",
       },
     ],
   },
 
   finalCta: {
-    eyebrow: "DEPLOY NOW",
-    headline: "Ship it to the edge tonight.",
+    eyebrow: "GET STARTED",
+    headline: "Your first answer is seconds away.",
     cta: { label: "GET STARTED", to: "/signup" },
-    caption: "NO CREDIT CARD · FREE TIER",
+    caption: "NO CREDIT CARD · FREE EVERY MONTH",
+  },
+
+  footer: {
+    links: [
+      { label: "PRIVACY", href: "#" },
+      { label: "TERMS", href: "#" },
+      { label: "CONTACT", href: "#" },
+    ],
+    note: "V.01",
   },
 }

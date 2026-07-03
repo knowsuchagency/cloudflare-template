@@ -77,8 +77,8 @@ app_title:
 
 app_tagline:
   type: str
-  help: "One-line description shown under the app title in the login card."
-  default: "Hono worker, Drizzle adapter, Cloudflare D1."
+  help: "One-line, user-facing description shown in the hero and the login card. Speak to your users, not about your stack."
+  default: "Instant answers, wherever you are."
 
 design_system:
   type: str

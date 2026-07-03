@@ -1,38 +1,37 @@
-// biome-ignore-all lint/a11y/useValidAnchor: footer legal/changelog links are intentional placeholders in the template; wire up real hrefs per project
+// biome-ignore-all lint/a11y/useValidAnchor: footer legal links are intentional placeholders in the template; wire up real hrefs per project (src/content/marketing.ts)
+
+import { ThemeToggle } from "@/components/theme-toggle"
+import { marketing } from "@/content/marketing"
 
 export function Footer() {
+  const footer = marketing.footer
+
   return (
     <footer className="border-t border-[var(--border-1)] py-8">
-      {/* Dot-matrix separator — Nothing motif */}
+      {/* Dot-matrix separator */}
       <div aria-hidden="true" className="dot-grid-subtle mb-6 h-6 w-full" />
 
       {/* Single mono footer row, uppercase, ghosted */}
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-3)]">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
         <span>
-          (c) {new Date().getFullYear()} · {{ app_title }} · BUILT ON CLOUDFLARE WORKERS
+          (c) {new Date().getFullYear()} · {{ app_title }}
         </span>
+
         <span className="flex items-center gap-3">
-          <a href="#" className="hover:text-[var(--fg-1)]">
-            PRIVACY
-          </a>
-          <span aria-hidden>·</span>
-          <a href="#" className="hover:text-[var(--fg-1)]">
-            SECURITY
-          </a>
-          <span aria-hidden>·</span>
-          <a href="#" className="hover:text-[var(--fg-1)]">
-            CHANGELOG
-          </a>
-          <span aria-hidden>·</span>
-          <a href="#" className="hover:text-[var(--fg-1)]">
-            STATUS
-          </a>
-          <span aria-hidden>·</span>
-          <a href="#" className="hover:text-[var(--fg-1)]">
-            GITHUB
-          </a>
+          {footer.links.map((link, i) => (
+            <span key={link.label} className="flex items-center gap-3">
+              {i > 0 && <span aria-hidden>·</span>}
+              <a href={link.href} className="hover:text-[var(--fg-1)]">
+                {link.label}
+              </a>
+            </span>
+          ))}
         </span>
-        <span>V.01</span>
+
+        <span className="flex items-center gap-4">
+          {footer.note && <span>{footer.note}</span>}
+          <ThemeToggle />
+        </span>
       </div>
     </footer>
   )
