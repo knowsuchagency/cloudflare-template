@@ -44,7 +44,13 @@
     // wildcard here means auth works on previews even before `mise run deploy`
     // patches BETTER_AUTH_URL to the deployed origin (which would let
     // deriveTrustedOrigins() infer the same wildcard automatically).
-    "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %}
+    "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %},
+    // Stripe price IDs for the Pro plan (flat base + metered token overage).
+    // Filled in by `mise run stripe:bootstrap` — until then billing endpoints
+    // 400 on checkout, but auth + chat's free tier work fine (the stripe
+    // plugin is skipped entirely while STRIPE_SECRET_KEY is unset).
+    "STRIPE_PRO_PRICE_ID": "REPLACE_WITH_ID_FROM_stripe_bootstrap",
+    "STRIPE_METERED_PRICE_ID": "REPLACE_WITH_ID_FROM_stripe_bootstrap"
   },
   // The `env.preview` block defines a separate `{{ worker_name }}-preview`
   // Worker bound to its own `{{ d1_database_name }}-preview` D1, so
@@ -81,7 +87,9 @@
       "vars": {
         "BETTER_AUTH_URL": "http://localhost:8787",
         "EMAIL_FROM": "noreply@example.com"{% if cloudflare_account_subdomain %},
-        "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %}
+        "BETTER_AUTH_TRUSTED_ORIGINS": "https://*.{{ cloudflare_account_subdomain }}.workers.dev"{% endif %},
+        "STRIPE_PRO_PRICE_ID": "REPLACE_WITH_ID_FROM_stripe_bootstrap",
+        "STRIPE_METERED_PRICE_ID": "REPLACE_WITH_ID_FROM_stripe_bootstrap"
       },
       // Bindings are not inherited by named environments — redeclare AI and the
       // Email Sending binding here so the preview Worker matches prod.

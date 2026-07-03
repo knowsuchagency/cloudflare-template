@@ -1,2 +1,11 @@
 BETTER_AUTH_URL=http://localhost:8787
 BETTER_AUTH_SECRET=change-me-generate-with-openssl-rand-base64-32
+
+# Stripe billing — OPTIONAL for local dev. Leave both unset and the app runs
+# without billing (sign-up works, chat uses the free tier). To exercise the
+# full flow: set a sandbox secret key, run `mise run stripe:bootstrap`, and
+# forward webhooks with:
+#   stripe listen --forward-to localhost:8787/api/auth/stripe/webhook
+# (the `stripe listen` output gives you the whsec_... value below)
+#STRIPE_SECRET_KEY=sk_test_...
+#STRIPE_WEBHOOK_SECRET=whsec_...

@@ -235,6 +235,42 @@ run = "bunx vitest run"
 description = "Run the test suite in watch mode"
 run = "bunx vitest"
 
+[tasks."stripe:bootstrap"]
+description = "Create the Stripe billing meter, Pro product, and prices (idempotent), then patch the price IDs into wrangler.jsonc. Reads STRIPE_SECRET_KEY from the environment or .dev.vars. Pass --url https://your-app.example to also create the webhook endpoint."
+run = '''
+if [ -z "${STRIPE_SECRET_KEY:-}" ] && [ -f .dev.vars ]; then
+  STRIPE_SECRET_KEY=$(grep -E '^STRIPE_SECRET_KEY=' .dev.vars | head -1 | cut -d= -f2-)
+  export STRIPE_SECRET_KEY
+fi
+if [ -z "${STRIPE_SECRET_KEY:-}" ]; then
+  echo "✗ STRIPE_SECRET_KEY not set — export it or add it to .dev.vars" >&2
+  echo "  (grab a sandbox key at https://dashboard.stripe.com/test/apikeys)" >&2
+  exit 1
+fi
+bun scripts/stripe-bootstrap.ts "$@"
+'''
+
+[tasks."stripe:secrets"]
+description = "Upload STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET from .dev.vars to the remote Worker (idempotent per secret; opt-in — not part of `mise init`)"
+run = '''
+[ -f .dev.vars ] || { echo "✗ .dev.vars not found" >&2; exit 1; }
+command -v jq >/dev/null 2>&1 || { echo "✗ stripe:secrets requires jq (https://jqlang.org)" >&2; exit 1; }
+
+existing=$(bunx wrangler secret list 2>/dev/null || echo '[]')
+for key in STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET; do
+  val=$(grep -E "^${key}=" .dev.vars | head -1 | cut -d= -f2-)
+  if [ -z "$val" ]; then
+    echo "• $key not in .dev.vars — skipping"
+    continue
+  fi
+  if printf '%s' "$existing" | jq -e --arg k "$key" 'any(.name == $k)' >/dev/null 2>&1; then
+    echo "✓ $key already set on {{ worker_name }} — skipping"
+    continue
+  fi
+  printf '%s' "$val" | bunx wrangler secret put "$key"
+done
+'''
+
 [tasks."auth:generate"]
 description = "Regenerate src/db/schema.ts from better-auth config"
 run = "bunx better-auth generate --config ./better-auth.config.ts --output ./src/db/schema.ts -y"

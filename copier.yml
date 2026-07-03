@@ -36,6 +36,12 @@ _message_after_copy: |
     mise dev                  # http://localhost:8787
     mise deploy               # ship to *.workers.dev
 
+  Billing (Stripe) is built in but dormant until configured:
+    mise run stripe:bootstrap # create meter + Pro prices, patch wrangler.jsonc
+                              # (needs STRIPE_SECRET_KEY in env or .dev.vars)
+    mise run stripe:secrets   # upload Stripe secrets to the deployed Worker
+  Until then, sign-up and the free chat tier work normally.
+
   init provisions remote resources only when wrangler is already authenticated;
   otherwise it prints a hint. Run
   `mise run d1:create && mise run secret:put && mise run migrate:remote`

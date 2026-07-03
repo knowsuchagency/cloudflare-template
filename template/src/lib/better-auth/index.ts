@@ -2,8 +2,10 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../../db/schema";
+import * as appSchema from "../../db/app-schema";
 import { betterAuthOptions } from "./options";
 import { sendPasswordResetEmail } from "../email/reset-password";
+import { stripePlugin } from "./stripe";
 
 /**
  * Better Auth's CSRF check rejects any request whose Origin doesn't match
@@ -59,7 +61,8 @@ export function deriveTrustedOrigins(env: Env): string[] {
 }
 
 export const auth = (env: Env) => {
-  const db = drizzle(env.DB, { schema });
+  const fullSchema = { ...schema, ...appSchema };
+  const db = drizzle(env.DB, { schema: fullSchema });
 
   return betterAuth({
     ...betterAuthOptions,
@@ -79,9 +82,13 @@ export const auth = (env: Env) => {
         });
       },
     },
-    database: drizzleAdapter(db, { provider: "sqlite", schema }),
+    database: drizzleAdapter(db, { provider: "sqlite", schema: fullSchema }),
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: deriveTrustedOrigins(env),
+    // Billing degrades gracefully: without STRIPE_SECRET_KEY the plugin (and
+    // its createCustomerOnSignUp hook) is skipped, so sign-up works in a
+    // fresh project before `mise run stripe:bootstrap` has been run.
+    plugins: env.STRIPE_SECRET_KEY ? [stripePlugin(env)] : [],
   });
 };
