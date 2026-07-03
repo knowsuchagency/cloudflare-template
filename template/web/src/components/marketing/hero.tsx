@@ -1,8 +1,6 @@
 import { Link } from "react-router"
 
 import { Button } from "@/components/ui/button"
-import { StampLedger } from "@/components/marketing/stamp-ledger"
-import { InstallBlock } from "@/components/marketing/install-block"
 import { HeroBackdrop } from "@/components/marketing/hero-backdrop"
 import { SplitText } from "@/components/motion/split-text"
 import { DecryptedText } from "@/components/motion/decrypted-text"
@@ -89,16 +87,26 @@ export function Hero() {
         </div>
       </Reveal>
 
-      {/* Proof slot: terminal artifacts for dev products; swap via content. */}
-      {hero.proof === "terminal" && (
-        <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Reveal delay={0.35} y={20}>
-            <InstallBlock />
-          </Reveal>
-          <Reveal delay={0.45} y={20}>
-            <StampLedger />
-          </Reveal>
-        </div>
+      {/* Proof slot: a product screenshot in a hard-edged instrument frame. */}
+      {hero.proof.mode === "image" && (
+        <Reveal delay={0.35} y={20} className="relative">
+          <figure className="m-0 border border-[var(--border-1)] bg-[var(--bg-1)]">
+            <div className="flex items-center justify-between border-b border-[var(--border-1)] px-4 py-2.5">
+              <span className="font-mono text-[10px] leading-none tracking-[0.1em] text-[var(--fg-2)] uppercase">
+                {hero.proof.caption ?? "PREVIEW"}
+              </span>
+              <span className="font-mono text-[10px] leading-none tracking-[0.1em] text-[var(--fg-3)] uppercase">
+                FIG · 01
+              </span>
+            </div>
+            <img
+              src={hero.proof.src}
+              alt={hero.proof.alt}
+              loading="lazy"
+              className="block w-full"
+            />
+          </figure>
+        </Reveal>
       )}
     </section>
   )

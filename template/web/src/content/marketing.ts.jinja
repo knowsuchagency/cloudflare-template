@@ -34,9 +34,12 @@ export type MarketingContent = {
     riskReversal?: string
     /** Mono metadata segments that scramble in. Decorative texture. */
     metadata?: string[]
-    /** Hero proof artifact: "terminal" = install block + system log (dev
-     * products); "none" = hide (swap in your own screenshot/demo). */
-    proof: "terminal" | "none"
+    /** Hero proof artifact. "image" renders a product screenshot in a
+     * hard-edged instrument frame — drop the file in web/public and point
+     * `src` at it (e.g. "/proof.png"). "none" hides the slot. */
+    proof:
+      | { mode: "none" }
+      | { mode: "image"; src: string; alt: string; caption?: string }
   }
   /** Marquee tape items. Empty array hides the ticker. */
   ticker: string[]
@@ -98,7 +101,9 @@ export const marketing: MarketingContent = {
     secondaryCta: { label: "SEE PRICING", to: "#pricing" },
     riskReversal: "FREE TIER · NO CREDIT CARD",
     metadata: ["EDGE BUNDLE · WORKERS V4", "HONO · REACT · D1", "BUILD 0001"],
-    proof: "terminal",
+    // Swap in a real product shot once you have one:
+    // proof: { mode: "image", src: "/proof.png", alt: "Screenshot of …", caption: "LIVE PRODUCT" },
+    proof: { mode: "none" },
   },
 
   ticker: [

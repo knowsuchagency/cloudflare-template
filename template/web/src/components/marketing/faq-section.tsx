@@ -10,13 +10,14 @@ export function FaqSection() {
 
   return (
     <section id="faq" className="border-t border-[var(--border-1)] py-16 lg:py-20">
-      <Reveal>
-        <div className="mb-10 font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
-          {faq.heading}
-        </div>
-      </Reveal>
+      <div className="mx-auto max-w-[760px]">
+        <Reveal>
+          <div className="mb-10 text-center font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
+            {faq.heading}
+          </div>
+        </Reveal>
 
-      <div className="max-w-[760px] border-t border-[var(--border-1)]">
+        <div className="border-t border-[var(--border-1)]">
         {faq.items.map((item, i) => (
           <Reveal key={item.q} delay={i * 0.05}>
             <details className="group border-b border-[var(--border-1)]">
@@ -40,6 +41,7 @@ export function FaqSection() {
             </details>
           </Reveal>
         ))}
+        </div>
       </div>
     </section>
   )
