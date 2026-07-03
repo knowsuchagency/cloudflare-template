@@ -14,18 +14,19 @@ export function PricingSection() {
 
   return (
     <section id="pricing" className="border-t border-[var(--border-1)] py-16 lg:py-20">
+      <div className="mx-auto max-w-[880px]">
       <Reveal>
-        <div className="mb-3 font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
+        <div className="mb-3 text-center font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
           {pricing.heading}
         </div>
         {pricing.subhead && (
-          <h2 className="m-0 mb-10 max-w-[560px] font-sans text-[clamp(24px,3.4vw,36px)] leading-[1.1] font-medium tracking-[-0.01em] text-[var(--fg-0)]">
+          <h2 className="mx-auto mt-0 mb-10 max-w-[560px] text-center font-sans text-[clamp(24px,3.4vw,36px)] leading-[1.1] font-medium tracking-[-0.01em] text-[var(--fg-0)]">
             {pricing.subhead}
           </h2>
         )}
       </Reveal>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:max-w-[880px]">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {pricing.plans.map((plan, i) => (
           <Reveal key={plan.name} delay={i * 0.1} className="flex">
             <article
@@ -107,10 +108,11 @@ export function PricingSection() {
       </div>
 
       {pricing.footnote && (
-        <p className="m-0 mt-6 max-w-[640px] font-mono text-[10px] leading-[1.6] tracking-[0.04em] text-[var(--fg-3)] uppercase">
+        <p className="mx-auto mt-6 mb-0 max-w-[640px] text-center font-mono text-[10px] leading-[1.6] tracking-[0.04em] text-[var(--fg-3)] uppercase">
           {pricing.footnote}
         </p>
       )}
+      </div>
     </section>
   )
 }
