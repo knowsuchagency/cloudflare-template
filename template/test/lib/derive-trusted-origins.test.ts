@@ -13,17 +13,26 @@ type TestEnv = {
 const envWith = (overrides: Partial<TestEnv>): Env =>
   ({ BETTER_AUTH_SECRET: "x", ...overrides }) as unknown as Env;
 
+// Every result starts with the always-on localhost dev origins (any port).
+const LOCAL = ["http://localhost:*", "http://127.0.0.1:*"];
+
 describe("deriveTrustedOrigins", () => {
+  test("localhost dev origins (any port) are always trusted", () => {
+    const origins = deriveTrustedOrigins(envWith({ BETTER_AUTH_URL: "https://app.example.com" }));
+    expect(origins).toContain("http://localhost:*");
+    expect(origins).toContain("http://127.0.0.1:*");
+  });
+
   test("workers.dev URL auto-derives the wildcard sibling origin", () => {
     const origins = deriveTrustedOrigins(
       envWith({ BETTER_AUTH_URL: "https://my-worker.acct.workers.dev" }),
     );
-    expect(origins).toEqual(["https://*.acct.workers.dev"]);
+    expect(origins).toEqual([...LOCAL, "https://*.acct.workers.dev"]);
   });
 
-  test("custom domain does not auto-derive anything", () => {
+  test("custom domain adds nothing beyond the localhost dev origins", () => {
     const origins = deriveTrustedOrigins(envWith({ BETTER_AUTH_URL: "https://app.example.com" }));
-    expect(origins).toEqual([]);
+    expect(origins).toEqual([...LOCAL]);
   });
 
   test("BETTER_AUTH_TRUSTED_ORIGINS CSV is merged in", () => {
@@ -34,6 +43,7 @@ describe("deriveTrustedOrigins", () => {
       }),
     );
     expect(origins).toEqual([
+      ...LOCAL,
       "https://staging.example.com",
       "https://*.preview.workers.dev",
     ]);
@@ -47,6 +57,7 @@ describe("deriveTrustedOrigins", () => {
       }),
     );
     expect(origins).toEqual([
+      ...LOCAL,
       "https://*.acct.workers.dev",
       "https://other.example.com",
     ]);
@@ -59,7 +70,7 @@ describe("deriveTrustedOrigins", () => {
         BETTER_AUTH_TRUSTED_ORIGINS: "https://app.example.com",
       }),
     );
-    expect(origins).toEqual(["https://app.example.com"]);
+    expect(origins).toEqual([...LOCAL, "https://app.example.com"]);
   });
 
   test("empty/whitespace CSV entries are skipped", () => {
@@ -69,6 +80,6 @@ describe("deriveTrustedOrigins", () => {
         BETTER_AUTH_TRUSTED_ORIGINS: " , https://a.example.com , ,  ",
       }),
     );
-    expect(origins).toEqual(["https://a.example.com"]);
+    expect(origins).toEqual([...LOCAL, "https://a.example.com"]);
   });
 });

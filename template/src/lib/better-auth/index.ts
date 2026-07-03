@@ -36,6 +36,17 @@ import { stripePlugin } from "./stripe";
 export function deriveTrustedOrigins(env: Env): string[] {
   const origins = new Set<string>();
 
+  // Local dev on *any* port just works. `wrangler dev`, the Vite dev server
+  // (which auto-bumps its port when one is busy), and multiple front-ends
+  // pointed at one Worker all send an `http://localhost:<port>` /
+  // `http://127.0.0.1:<port>` Origin. Better Auth's trusted-origin matcher
+  // treats `*` as a wildcard for any non-`/` chars, so these two patterns
+  // cover every port. This is not a CSRF vector: browsers set `Origin`
+  // truthfully and a cross-site attacker's page always carries its own
+  // (non-localhost) https origin — it can never forge a localhost Origin.
+  origins.add("http://localhost:*");
+  origins.add("http://127.0.0.1:*");
+
   try {
     const url = new URL(env.BETTER_AUTH_URL);
     if (url.hostname.endsWith(".workers.dev")) {
