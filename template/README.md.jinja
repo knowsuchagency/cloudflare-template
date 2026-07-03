@@ -4,7 +4,10 @@ Cloudflare Worker that serves [Better Auth](https://better-auth.com) and a shadc
 
 - Hono Worker with Better Auth mounted at `/api/auth/*`, `drizzle-orm/d1` adapter
 - Vite React SPA served via the Worker's `assets` binding, gated so `/api/*` runs on the Worker
-- Generated drizzle schema + SQL migration for the four better-auth tables
+- Generated drizzle schema + SQL migration for the better-auth (+ stripe plugin) tables
+- Streaming AI chat on Workers AI (llama-4-scout) with shadcn chat components
+- Stripe billing: Pro subscription ($20/mo, 1M tokens included) with per-token overage via
+  Billing Meters, plus a free 50k-tokens/month tier — dormant until you add a Stripe key
 
 ## Quickstart
 
@@ -22,6 +25,20 @@ mise deploy                   # ship to *.workers.dev
 ```
 
 `init` only provisions remote resources when wrangler is already authenticated. If you skipped `wrangler login`, it prints a hint and moves on — run `mise run d1:create && mise run secret:put && mise run migrate:remote` yourself once you've logged in. `d1:create` and `secret:put` require `jq`.
+
+### Billing (optional)
+
+The app runs fine without Stripe — sign-up works and chat uses the free tier. To turn on subscriptions with metered overage:
+
+```bash
+# sandbox key from https://dashboard.stripe.com/test/apikeys → .dev.vars (STRIPE_SECRET_KEY)
+mise run stripe:bootstrap     # creates the meter, Pro product, and prices; patches
+                              # STRIPE_*_PRICE_ID into wrangler.jsonc (idempotent)
+mise run stripe:secrets       # uploads STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET to the Worker
+mise run stripe:bootstrap -- --url https://your-app.example   # webhook endpoint (after deploy)
+```
+
+Local webhooks: `stripe listen --forward-to localhost:8787/api/auth/stripe/webhook`. See `CLAUDE.md` § Billing for the architecture.
 
 ### Headless auth (no browser)
 
@@ -54,6 +71,8 @@ Run `mise tasks` for the full list. Highlights:
 | `mise run d1:replicate` | Enable D1 read replication (mode=auto) on the prod database (idempotent) |
 | `mise run logpush:setup` | Create R2 bucket `{{ project_slug }}-logs` + Logpush job for Worker trace events (opt-in; idempotent) |
 | `mise run secret:put` | Ensure `BETTER_AUTH_SECRET` is set on the remote Worker (idempotent) |
+| `mise run stripe:bootstrap` | Create Stripe meter/product/prices, patch price IDs into `wrangler.jsonc` (idempotent) |
+| `mise run stripe:secrets` | Upload `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` from `.dev.vars` to the Worker |
 | `mise run deploy` | Build the SPA and `wrangler deploy` |
 | `mise run teardown` | Delete the remote Worker and D1 database (irreversible) |
 
