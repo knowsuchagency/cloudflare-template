@@ -9,6 +9,7 @@ import { Signup } from "@/pages/signup"
 import { ForgotPassword } from "@/pages/forgot-password"
 import { ResetPassword } from "@/pages/reset-password"
 import { AppPage } from "@/pages/app"
+import { Billing } from "@/pages/billing"
 import { Chat } from "@/pages/chat"
 
 export function App() {
@@ -61,6 +62,14 @@ export function App() {
           element={
             <RequireAuth>
               <Chat />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/billing"
+          element={
+            <RequireAuth>
+              <Billing />
             </RequireAuth>
           }
         />
