@@ -6,7 +6,7 @@ import { PRO_INCLUDED_TOKENS } from "../billing/constants";
 // API version so SDK upgrades don't silently change wire behavior.
 export const stripeClient = (env: Env) =>
   new Stripe(env.STRIPE_SECRET_KEY ?? "", {
-    apiVersion: "2026-03-25.dahlia",
+    apiVersion: "2026-06-24.dahlia",
     httpClient: Stripe.createFetchHttpClient(),
   });
 

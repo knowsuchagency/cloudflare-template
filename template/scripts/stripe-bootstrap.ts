@@ -47,7 +47,7 @@ const appName = (
   JSON.parse(readFileSync("package.json", "utf8")) as { name: string }
 ).name;
 
-const stripe = new Stripe(apiKey, { apiVersion: "2026-03-25.dahlia" });
+const stripe = new Stripe(apiKey, { apiVersion: "2026-06-24.dahlia" });
 
 // 1. Meter
 let meter = (await stripe.billing.meters.list({ status: "active", limit: 100 })).data.find(

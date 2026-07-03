@@ -1,5 +1,11 @@
 import { applyD1Migrations, env } from "cloudflare:test";
 import { beforeAll, beforeEach } from "vitest";
+import { installStripeMock } from "./stripe-mock";
+
+// The stripe plugin is active under vitest (dummy STRIPE_SECRET_KEY in
+// vitest.config.ts), so every sign-up fires createCustomerOnSignUp. Intercept
+// all outbound fetch and mock Stripe's API — see test/stripe-mock.ts.
+installStripeMock();
 
 beforeAll(async () => {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);

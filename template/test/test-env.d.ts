@@ -8,6 +8,9 @@ declare global {
     interface Env {
       TEST_MIGRATIONS: D1Migration[];
       WRANGLER_CONFIG_SOURCE: string;
+      // Dummy Stripe values injected by vitest.config.ts (see test/setup.ts).
+      STRIPE_SECRET_KEY: string;
+      STRIPE_WEBHOOK_SECRET: string;
     }
   }
 }

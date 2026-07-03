@@ -22,6 +22,14 @@ export default defineConfig(async () => {
             // so Better Auth's CSRF check passes against this URL.
             BETTER_AUTH_SECRET: "test-secret-not-for-prod-aaaaaaaaaaaaaaaaaaaaaa",
             BETTER_AUTH_URL: "http://localhost",
+            // Dummy Stripe config so the @better-auth/stripe plugin mounts in
+            // tests (webhook route, subscription endpoints, customer-on-signup).
+            // All api.stripe.com traffic is intercepted by fetchMock in
+            // test/setup.ts — nothing reaches the real Stripe.
+            STRIPE_SECRET_KEY: "sk_test_dummy_for_vitest",
+            STRIPE_WEBHOOK_SECRET: "whsec_test_dummy",
+            STRIPE_PRO_PRICE_ID: "price_pro_test",
+            STRIPE_METERED_PRICE_ID: "price_metered_test",
           },
         },
       }),
