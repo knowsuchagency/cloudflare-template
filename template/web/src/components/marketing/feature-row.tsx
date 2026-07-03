@@ -1,3 +1,6 @@
+import { Reveal } from "@/components/motion/reveal"
+import { SpotlightCard } from "@/components/marketing/spotlight-card"
+
 type Feature = {
   title: string
   body: string
@@ -31,42 +34,47 @@ export function FeatureRow() {
   return (
     <section
       id="features"
-      className="border-t border-[var(--border-1)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+      className="grid grid-cols-1 border-t border-[var(--border-1)] sm:grid-cols-2 lg:grid-cols-4"
     >
       {FEATURES.map((f, i) => (
-        <article
+        <SpotlightCard
           key={f.title}
           className={
-            "relative flex flex-col gap-5 px-5 py-8 " +
             // Hairline dividers between columns; only show on the relevant breakpoints
             (i > 0 ? "lg:border-l lg:border-[var(--border)] " : "") +
             (i % 2 === 1 ? "sm:border-l sm:border-[var(--border)] " : "") +
             (i >= 2 ? "sm:border-t sm:border-[var(--border)] lg:border-t-0 " : "")
           }
         >
-          {/* Top: numeric eyebrow — mono, quiet */}
-          <div className="font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-3)]">
-            {String(i + 1).padStart(2, "0")} /{" "}
-            {String(FEATURES.length).padStart(2, "0")}
-          </div>
+          <Reveal
+            delay={i * 0.08}
+            y={20}
+            className="relative flex h-full flex-col gap-5 px-5 py-8"
+          >
+            {/* Top: numeric eyebrow — mono, quiet */}
+            <div className="font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
+              {String(i + 1).padStart(2, "0")} /{" "}
+              {String(FEATURES.length).padStart(2, "0")}
+            </div>
 
-          {/* Middle: heading — Space Grotesk */}
-          <h3 className="font-sans text-[18px] font-medium leading-[1.2] tracking-[-0.01em] text-[var(--fg-0)]">
-            {f.title}
-          </h3>
+            {/* Middle: heading */}
+            <h3 className="font-sans text-[18px] leading-[1.2] font-medium tracking-[-0.01em] text-[var(--fg-0)]">
+              {f.title}
+            </h3>
 
-          {/* Body */}
-          <p className="font-sans text-[13px] leading-[1.55] text-[var(--fg-2)]">
-            {f.body}
-          </p>
+            {/* Body */}
+            <p className="font-sans text-[13px] leading-[1.55] text-[var(--fg-2)]">
+              {f.body}
+            </p>
 
-          {/* Bottom: caption */}
-          <div className="mt-auto pt-3">
-            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-[var(--fg-3)]">
-              {f.caption}
-            </span>
-          </div>
-        </article>
+            {/* Bottom: caption */}
+            <div className="mt-auto pt-3">
+              <span className="font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
+                {f.caption}
+              </span>
+            </div>
+          </Reveal>
+        </SpotlightCard>
       ))}
     </section>
   )

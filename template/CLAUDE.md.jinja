@@ -46,6 +46,15 @@ Worker serves the SPA through the `assets` binding with `not_found_handling: sin
 
 This project was generated with the **{{ design_system }}** design system. The look lives entirely in a token layer: `web/src/index.css` imports `web/src/styles/{{ design_system }}.css` (palette, fonts, radius, motion as CSS custom properties + a shadcn `@theme` mapping). Components consume semantic tokens (`--bg-0`, `--fg-1`, `--accent`, `--font-display`, …), so the design system swaps without touching component code. All three (`nothing`, `apex`, `onyx`) ship under `web/src/styles/` and are dual-mode — every color is `light-dark(…)`, defaulting to the OS with a System/Light/Dark toggle (`web/src/components/theme-toggle.tsx`, applied as `data-theme` on `<html>`; a pre-paint script in `index.html` avoids FOUC). To switch later: change the import in `index.css` and add that system's fonts to `web/package.json` (see the `@import` lines at the top of each token file).
 
+## Marketing page
+
+`/` (`web/src/pages/landing.tsx`) composes Nav → Hero → Ticker → FeatureRow → StatsBand → CtaBand → Footer from `web/src/components/marketing/`. Two kinds of flourish sit on top of the token layer, both design-system-agnostic:
+
+- **WebGL shaders** (`@paper-design/shaders-react`): the hero's dithered sphere (`hero-backdrop.tsx`) and the closing band's grain gradient (`cta-band.tsx`). Shader colors are resolved at runtime from CSS custom properties via `use-token-colors.ts` (paints tokens onto a probe element and reads back the computed color), so they follow the active design system *and* the live theme toggle. Animation speed drops to 0 under `prefers-reduced-motion`.
+- **Motion primitives** (`web/src/components/motion/`, adapted from [react-bits](https://reactbits.dev), built on `motion`): `SplitText` (staggered hero headline), `DecryptedText` (scramble-in mono metadata), `CountUp` (stats tick up in view), `Reveal` (scroll-in fade/rise). All render statically under `prefers-reduced-motion` and keep real text available to screen readers (`sr-only` + `aria-hidden` pattern).
+
+`SpotlightCard` (mouse-tracked `--accent-subtle` glow) and `Ticker` (pure-CSS marquee) round out the set. Everything uses semantic tokens only — swapping the design system restyles the whole page, shaders included.
+
 ## AI chat
 
 `POST /api/chat` is a streaming chatbot built on the `AI` binding (Workers AI), routed through the **`default` AI Gateway** for caching/observability. It uses the Vercel AI SDK: `streamText` + `workers-ai-provider`'s `createWorkersAI({ binding, gateway: { id: "default" } })` server-side (model `@cf/meta/llama-4-scout-17b-16e-instruct`), and `useChat` from `@ai-sdk/react` in `web/src/pages/chat.tsx`.

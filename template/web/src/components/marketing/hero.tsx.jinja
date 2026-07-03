@@ -3,62 +3,79 @@ import { Link } from "react-router"
 import { Button } from "@/components/ui/button"
 import { StampLedger } from "@/components/marketing/stamp-ledger"
 import { InstallBlock } from "@/components/marketing/install-block"
+import { HeroBackdrop } from "@/components/marketing/hero-backdrop"
+import { SplitText } from "@/components/motion/split-text"
+import { DecryptedText } from "@/components/motion/decrypted-text"
+import { Reveal } from "@/components/motion/reveal"
 
 export function Hero() {
   return (
     <section className="relative py-16 lg:py-24">
+      {/* Dithered halftone sphere — the one rendered moment on the page */}
+      <HeroBackdrop />
+
       {/* Eyebrow — mono instrument label, edge-anchored */}
-      <div className="mb-12 flex items-center justify-between font-mono text-[10px] tracking-[0.1em] text-[var(--fg-2)] uppercase">
-        <span>EXPERIMENTAL SYSTEMS</span>
-        <span className="hidden sm:inline">EST · 2026</span>
-      </div>
-
-      {/* Hero wordmark — Doto dot-matrix display, the one expressive moment */}
-      <h1 className="m-0 mb-10 font-display text-[clamp(56px,11vw,140px)] leading-[0.9] font-semibold tracking-[-0.03em] text-[var(--fg-0)] uppercase">
-        {{ app_title }}
-      </h1>
-
-      {/* Mono metadata strip — tertiary, pushed quiet */}
-      <div className="mb-10 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] tracking-[0.08em] text-[var(--fg-3)] uppercase">
-        <span className="text-[var(--fg-2)]">EDGE BUNDLE · WORKERS V4</span>
-        <span aria-hidden>·</span>
-        <span>HONO · REACT · D1</span>
-        <span aria-hidden>·</span>
-        <span>BUILD 0001</span>
-      </div>
-
-      {/* Tagline — Space Grotesk, secondary layer */}
-      <h2 className="m-0 mb-6 max-w-[680px] font-sans text-[28px] leading-[1.15] font-medium tracking-[-0.01em] text-[var(--fg-1)]">
-        {{ app_tagline }}
-      </h2>
-
-      <p className="m-0 mb-10 max-w-[600px] font-sans text-[15px] leading-[1.6] text-[var(--fg-2)]">
-        A typed full-stack starter on Cloudflare Workers. Hono on the edge,
-        React + Vite on the front, Better Auth on top of D1. Sign up, sign in,
-        and start shipping.
-      </p>
-
-      <div className="mb-16 flex flex-wrap items-center gap-3">
-        {/* The page's single red interrupt — the action we want taken. */}
-        <Button size="lg" variant="accent" asChild>
-          <Link to="/signup">
-            GET STARTED <span aria-hidden>→</span>
-          </Link>
-        </Button>
-        <Button size="lg" variant="outline" asChild>
-          <Link to="/login">
-            SIGN IN <span aria-hidden>→</span>
-          </Link>
-        </Button>
-        <span className="ml-1 font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
-          FREE DURING PREVIEW
+      <div className="relative mb-12 flex items-center justify-between font-mono text-[10px] tracking-[0.1em] text-[var(--fg-2)] uppercase">
+        <DecryptedText text="EXPERIMENTAL SYSTEMS" duration={700} />
+        <span className="hidden sm:inline">
+          <DecryptedText text="EST · 2026" delay={200} duration={700} />
         </span>
       </div>
 
+      {/* Hero wordmark — staggered rise, clipped at the baseline */}
+      <h1 className="relative m-0 mb-10 font-display text-[clamp(56px,11vw,140px)] leading-[0.9] font-semibold tracking-[-0.03em] text-[var(--fg-0)] uppercase">
+        <SplitText text="{{ app_title }}" stagger={0.09} />
+      </h1>
+
+      {/* Mono metadata strip — decrypts into place, tertiary */}
+      <div className="relative mb-10 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] tracking-[0.08em] text-[var(--fg-3)] uppercase">
+        <span className="text-[var(--fg-2)]">
+          <DecryptedText text="EDGE BUNDLE · WORKERS V4" delay={300} />
+        </span>
+        <span aria-hidden>·</span>
+        <DecryptedText text="HONO · REACT · D1" delay={500} />
+        <span aria-hidden>·</span>
+        <DecryptedText text="BUILD 0001" delay={700} />
+      </div>
+
+      {/* Tagline — secondary layer */}
+      <Reveal delay={0.25} y={16}>
+        <h2 className="m-0 mb-6 max-w-[680px] font-sans text-[28px] leading-[1.15] font-medium tracking-[-0.01em] text-[var(--fg-1)]">
+          {{ app_tagline }}
+        </h2>
+
+        <p className="m-0 mb-10 max-w-[600px] font-sans text-[15px] leading-[1.6] text-[var(--fg-2)]">
+          A typed full-stack starter on Cloudflare Workers. Hono on the edge,
+          React + Vite on the front, Better Auth on top of D1. Sign up, sign
+          in, and start shipping.
+        </p>
+
+        <div className="mb-16 flex flex-wrap items-center gap-3">
+          {/* The page's single red interrupt — the action we want taken. */}
+          <Button size="lg" variant="accent" asChild>
+            <Link to="/signup">
+              GET STARTED <span aria-hidden>→</span>
+            </Link>
+          </Button>
+          <Button size="lg" variant="outline" asChild>
+            <Link to="/login">
+              SIGN IN <span aria-hidden>→</span>
+            </Link>
+          </Button>
+          <span className="ml-1 font-mono text-[10px] tracking-[0.1em] text-[var(--fg-3)] uppercase">
+            FREE DURING PREVIEW
+          </span>
+        </div>
+      </Reveal>
+
       {/* Two-up: install steps + system log */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <InstallBlock />
-        <StampLedger />
+      <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Reveal delay={0.35} y={20}>
+          <InstallBlock />
+        </Reveal>
+        <Reveal delay={0.45} y={20}>
+          <StampLedger />
+        </Reveal>
       </div>
     </section>
   )
